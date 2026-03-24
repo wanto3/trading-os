@@ -46,7 +46,7 @@ function scoreMarket(m: PolymarketMarket): ScoredMarket | null {
   let conviction: "high" | "medium" | "low";
   let reason: string;
   let action: string;
-  let recommendation: "YES" | "NO";
+  const recommendation: "YES" | "NO" = pct >= 50 ? "YES" : "NO";
 
   if (distFrom50 >= 35) {
     conviction = "high";
@@ -69,9 +69,6 @@ function scoreMarket(m: PolymarketMarket): ScoredMarket | null {
     reason = `~${pct}% YES — near coinflip, high uncertainty`;
     action = "Skip — no clear edge, coinflip territory";
   }
-
-  // Recs are always the consensus side (if YES%, bet YES; if NO%, bet NO)
-  recommendation = pct >= 50 ? "YES" : "NO";
 
   // ── Composite Score ────────────────────────────────────
   // Urgency (40%): shorter = better (closer to resolution)

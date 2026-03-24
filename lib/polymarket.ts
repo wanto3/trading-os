@@ -17,13 +17,13 @@ interface GammaMarket {
   volumeNum: number;
   liquidityNum: number;
   endDate: string;
-  closed: boolean;
-  resolved: boolean;
+  closed: boolean | string;
+  resolved: boolean | string;
   oneDayPriceChange?: number;
   oneHourPriceChange?: number;
 }
 
-interface GammaResponse extends Array<GammaMarket> {}
+type GammaResponse = GammaMarket[];
 
 // Cache
 let _cache: {
@@ -62,8 +62,8 @@ function gammaToMarket(gm: GammaMarket): PolymarketMarket {
     liquidityNum: gm.liquidityNum ?? 0,
     startDate: "",
     endDate: gm.endDate,
-    resolved: gm.resolved ?? false,
-    closed: gm.closed ?? false,
+    resolved: gm.resolved === true || gm.resolved === "true",
+    closed: gm.closed === true || gm.closed === "true",
     urgency,
     volumeSurge: (gm.volumeNum ?? 0) > 500_000,
     oddsChange1h: gm.oneHourPriceChange,
