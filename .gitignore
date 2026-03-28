@@ -1,1 +1,6 @@
-.vercel
+node_modules/
+dist/
+.vercel/
+.env
+*.log
+.DS_Store
