@@ -1,0 +1,31 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #30363d #161b22;
+}
+*::-webkit-scrollbar { width: 6px; height: 6px; }
+*::-webkit-scrollbar-track { background: #161b22; }
+*::-webkit-scrollbar-thumb { background: #30363d; border-radius: 3px; }
+*::-webkit-scrollbar-thumb:hover { background: #484f58; }
+
+body {
+  background: #0d1117;
+  color: #e6edf3;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+@keyframes pulse-gain {
+  0%, 100% { color: #3fb950; }
+  50% { color: #56d364; }
+}
+
+@keyframes pulse-loss {
+  0%, 100% { color: #f85149; }
+  50% { color: #ff6b61; }
+}
+
+.price-up { animation: pulse-gain 2s ease-in-out; }
+.price-down { animation: pulse-loss 2s ease-in-out; }
