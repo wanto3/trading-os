@@ -12,7 +12,7 @@ const TIMEFRAMES = [
 ];
 
 export function CandlestickChart() {
-  const { selectedCoinId } = useCoin();
+  const { selectedCoinId, setSelectedCoinId } = useCoin();
   const chartRef = useRef<HTMLDivElement>(null);
   const chartApiRef = useRef<IChartApi | null>(null);
   const candleRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
