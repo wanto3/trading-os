@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getOhlc } from '../lib/coingecko';
+import { getOhlc, getMarketChart } from '../lib/coingecko';
 import { useCoin } from '../context/CoinContext';
 
 function calculateRSI(closes: number[], period = 14): number[] {
@@ -33,28 +33,84 @@ function calculateEMA(values: number[], period: number): number[] {
   return ema;
 }
 
+function calculateSMA(values: number[], period: number): number[] {
+  if (values.length < period) return [];
+  const result: number[] = [];
+  for (let i = period - 1; i < values.length; i++) {
+    const slice = values.slice(i - period + 1, i + 1);
+    const sum = slice.reduce((a, b) => {
+      const n = Number(b);
+      return a + (isNaN(n) ? 0 : n);
+    }, 0);
+    result.push(sum / period);
+  }
+  return result;
+}
+
 export function IndicatorsPanel() {
   const { selectedCoinId } = useCoin();
   const [rsi, setRsi] = useState<number[]>([]);
   const [macdLine, setMacdLine] = useState<number[]>([]);
   const [signalLine, setSignalLine] = useState<number[]>([]);
+  const [smaValues, setSmaValues] = useState<{ sma20: number | null; sma50: number | null; sma200: number | null }>({ sma20: null, sma50: null, sma200: null });
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const load = async () => {
       setLoading(true);
+      setSmaValues({ sma20: null, sma50: null, sma200: null });
       try {
-        const data = await getOhlc(selectedCoinId, 30);
-        const closes = data.map(d => d.close);
+        // Try OHLC first, fallback to market chart prices
+        let closes: number[] = [];
+        let chartData: Awaited<ReturnType<typeof getOhlc>> = [];
+        try {
+          chartData = await getOhlc(selectedCoinId, 365);
+          closes = chartData.map(d => {
+            const n = Number(d.close);
+            return isNaN(n) ? 0 : n;
+          });
+        } catch {
+          // OHLC failed, try market chart as fallback
+        }
+
+        // If OHLC didn't return enough data, use market chart
+        if (closes.length < 200) {
+          const chart = await getMarketChart(selectedCoinId, 365);
+          closes = chart.prices.map(([, price]) => {
+            const n = Number(price);
+            return isNaN(n) ? 0 : n;
+          });
+        }
+
+        if (closes.length === 0) return;
+
         const rsiValues = calculateRSI(closes);
         setRsi(rsiValues.slice(-30));
 
         const ema12 = calculateEMA(closes, 12);
         const ema26 = calculateEMA(closes, 26);
-        const macd = closes.map((_, i) => (ema12[i] || 0) - (ema26[i] || 0));
+        // MACD = EMA12 - EMA26. Align them so each MACD value corresponds to the same close.
+        // ema12[i] is the EMA12 at closes[i + (26-12)] = closes[i + 14]
+        // ema26[i] is the EMA26 at closes[i + (26-1)] = closes[i + 25]
+        // So MACD for closes[i] = ema12[i - 14] - ema26[i] (valid when i >= 14)
+        const macdOffset = 26 - 12; // 14
+        const macd: number[] = [];
+        for (let i = 0; i < ema26.length; i++) {
+          const v12 = ema12[i - macdOffset];
+          macd.push(v12 !== undefined && !isNaN(v12) ? v12 - ema26[i] : 0);
+        }
         setMacdLine(macd.slice(-30));
         const signal = calculateEMA(macd, 9);
         setSignalLine(signal);
+
+        const sma20Values = calculateSMA(closes, 20);
+        const sma50Values = calculateSMA(closes, 50);
+        const sma200Values = calculateSMA(closes, 200);
+        setSmaValues({
+          sma20: sma20Values.length > 0 && !isNaN(sma20Values[sma20Values.length - 1]) ? sma20Values[sma20Values.length - 1] : null,
+          sma50: sma50Values.length > 0 && !isNaN(sma50Values[sma50Values.length - 1]) ? sma50Values[sma50Values.length - 1] : null,
+          sma200: sma200Values.length > 0 && !isNaN(sma200Values[sma200Values.length - 1]) ? sma200Values[sma200Values.length - 1] : null,
+        });
       } catch (e) {
         // silent fail
       } finally {
@@ -144,14 +200,16 @@ export function IndicatorsPanel() {
         <h3 className="text-text-secondary text-xs font-semibold uppercase tracking-wider mb-3">Moving Averages</h3>
         <div className="grid grid-cols-3 gap-3">
           {[
-            { label: 'SMA 20', period: 20 },
-            { label: 'SMA 50', period: 50 },
-            { label: 'SMA 200', period: 200 },
+            { label: 'SMA 20', value: smaValues.sma20 },
+            { label: 'SMA 50', value: smaValues.sma50 },
+            { label: 'SMA 200', value: smaValues.sma200 },
           ].map(ma => (
             <div key={ma.label} className="text-center">
               <p className="text-text-secondary text-xs">{ma.label}</p>
-              <p className="font-mono text-sm font-semibold text-text-primary mt-1">--</p>
-              <p className="text-text-secondary text-xs">Enable chart overlay</p>
+              <p className="font-mono text-sm font-semibold text-text-primary mt-1">
+                {(ma.value !== null && !isNaN(ma.value)) ? ma.value.toLocaleString(undefined, { maximumFractionDigits: 2 }) : '--'}
+              </p>
+              <p className="text-text-secondary text-xs">SMA</p>
             </div>
           ))}
         </div>
