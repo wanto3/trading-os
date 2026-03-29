@@ -66,7 +66,8 @@ export function IndicatorsPanel() {
         try {
           chartData = await getOhlc(selectedCoinId, 365);
           closes = chartData.map(d => {
-            const n = Number(d.close);
+            // CoinGecko OHLC returns number[][]: [timestamp, open, high, low, close]
+            const n = Number(d[4]);
             return isNaN(n) ? 0 : n;
           });
         } catch {

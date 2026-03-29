@@ -57,7 +57,8 @@ export function searchCoins(query: string) {
 }
 
 export function getOhlc(coinId: string, days = 7) {
-  return fetchWithCache<OhlcData[]>(
+  // CoinGecko returns number[][]: [timestamp, open, high, low, close]
+  return fetchWithCache<number[][]>(
     `/coins/${coinId}/ohlc?vs_currency=usd&days=${days}`, 300000
   );
 }

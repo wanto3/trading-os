@@ -101,16 +101,18 @@ export function CandlestickChart() {
       try {
         const rawData = await getOhlc(selectedCoinId, timeframe.days);
         const candleData: CandlestickData<Time>[] = rawData.map(d => ({
-          time: (d.time / 1000) as Time,
-          open: d.open,
-          high: d.high,
-          low: d.low,
-          close: d.close,
+          // CoinGecko OHLC returns number[][]: [timestamp, open, high, low, close]
+          time: (d[0] / 1000) as Time,
+          open: d[1],
+          high: d[2],
+          low: d[3],
+          close: d[4],
         }));
+        // CoinGecko OHLC endpoint does not include volume — use 0 placeholder
         const volumeData: HistogramData<Time>[] = rawData.map(d => ({
-          time: (d.time / 1000) as Time,
+          time: (d[0] / 1000) as Time,
           value: 0,
-          color: d.close >= d.open ? 'rgba(63,185,80,0.3)' : 'rgba(248,81,73,0.3)',
+          color: d[4] >= d[1] ? 'rgba(63,185,80,0.3)' : 'rgba(248,81,73,0.3)',
         }));
         candleRef.current!.setData(candleData);
         volumeRef.current!.setData(volumeData);
