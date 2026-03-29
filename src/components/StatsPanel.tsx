@@ -114,6 +114,73 @@ export function StatsPanel({ coins, globalData }: StatsPanelProps) {
         ) : null}
       </div>
 
+      {/* BTC ATH Drawdown */}
+      {(() => {
+        const BTC_ATH = 126080;
+        const btcCoin = coins.find(c => c.id === 'bitcoin');
+        const currentPrice = btcCoin?.current_price || 0;
+        const drawdown = currentPrice > 0 ? ((currentPrice - BTC_ATH) / BTC_ATH) * 100 : 0;
+
+        let zone: { label: string; color: string; bg: string; text: string } = {
+          label: 'Near ATH', color: '#d29922', bg: 'bg-[#d29922]/10', text: 'text-[#d29922]'
+        };
+        if (drawdown < -40) {
+          zone = { label: 'Accumulation Zone', color: '#3fb950', bg: 'bg-[#3fb950]/10', text: 'text-[#3fb950]' };
+        } else if (drawdown < -20) {
+          zone = { label: 'Correction Zone', color: '#f0883e', bg: 'bg-[#f0883e]/10', text: 'text-[#f0883e]' };
+        } else if (drawdown >= 0) {
+          zone = { label: 'New ATH', color: '#ffd700', bg: 'bg-[#ffd700]/10', text: 'text-[#ffd700]' };
+        }
+
+        return (
+          <div className="bg-bg-primary rounded-lg p-4 border border-border-subtle">
+            <h3 className="text-text-secondary text-xs font-semibold uppercase tracking-wider mb-3">BTC vs All-Time High</h3>
+            <div className="flex items-end justify-between">
+              <div>
+                <div className="flex items-baseline gap-2">
+                  <span className="font-mono text-xl font-bold text-text-primary">
+                    ${currentPrice > 0 ? currentPrice.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : '—'}
+                  </span>
+                  <span className={`font-mono text-sm font-semibold ${drawdown < 0 ? 'text-loss' : 'text-gain'}`}>
+                    {drawdown >= 0 ? '+' : ''}{drawdown.toFixed(1)}%
+                  </span>
+                </div>
+                <div className={`inline-flex items-center gap-1.5 mt-2 px-2 py-1 rounded-full text-xs font-semibold ${zone.bg} ${zone.text}`}>
+                  <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: zone.color }} />
+                  {zone.label}
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-text-secondary text-xs">ATH</p>
+                <p className="font-mono text-sm font-bold text-text-secondary">${BTC_ATH.toLocaleString()}</p>
+              </div>
+            </div>
+            {/* Drawdown bar */}
+            <div className="mt-3">
+              <div className="h-2 rounded-full overflow-hidden flex bg-bg-surface">
+                {drawdown >= 0 ? (
+                  <div className="h-full bg-[#ffd700] rounded-full" style={{ width: '100%' }} />
+                ) : (
+                  <>
+                    <div className="h-full bg-[#3fb950]" style={{ width: '40%' }} />
+                    <div className="h-full bg-[#f0883e]" style={{ width: '20%' }} />
+                    <div className="h-full bg-[#d29922]" style={{ width: '20%' }} />
+                    <div className="h-full bg-bg-surface flex-1" />
+                    <div className="h-full w-0.5 bg-text-primary" style={{ marginLeft: `${Math.max(0, Math.min(100, 40 + Math.abs(drawdown - (-40)) / 60 * 60))}%` }} />
+                  </>
+                )}
+              </div>
+              <div className="flex justify-between text-[9px] text-text-secondary mt-1">
+                <span>-60%</span>
+                <span>-40%</span>
+                <span>-20%</span>
+                <span>ATH</span>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Market Overview */}
       <div className="grid grid-cols-3 gap-3">
         <div className="bg-bg-primary rounded-lg p-3 border border-border-subtle">
