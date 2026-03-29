@@ -38,9 +38,10 @@ function OddsBar({ yesPrice }: { yesPrice: number }) {
 }
 
 function MarketCard({ market }: { market: PredictionMarket }) {
-  const yesPercent = Math.round(market.yesPrice * 100);
+  const yesPrice = market.outcomes[0]?.price ?? 0.5;
+  const yesPercent = Math.round(yesPrice * 100);
   const noPercent = 100 - yesPercent;
-  const polymarketUrl = `https://polymarket.com/event/${market.slug}`;
+  const polymarketUrl = `https://polymarket.com/market/${market.id}`;
 
   return (
     <a
@@ -56,7 +57,7 @@ function MarketCard({ market }: { market: PredictionMarket }) {
         <ExternalLink size={10} className="text-text-secondary opacity-0 group-hover:opacity-100 transition-opacity mt-0.5 shrink-0" />
       </div>
 
-      <OddsBar yesPrice={market.yesPrice} />
+      <OddsBar yesPrice={yesPrice} />
 
       <div className="flex items-center justify-between mt-1.5">
         <div className="flex items-center gap-3">

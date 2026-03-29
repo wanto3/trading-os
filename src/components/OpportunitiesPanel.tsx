@@ -158,7 +158,7 @@ export function OpportunitiesPanel() {
             try {
               const ohlc = await getOhlc(coin.id, 30);
               if (cancelled || ohlc.length === 0) return;
-              const closes = ohlc.map((d) => d.close);
+              const closes = ohlc.map((d) => d[4]); // [timestamp, open, high, low, close]
               const rsi = calculateRSI(closes);
               const macd = getMacdStrength(closes);
               const trend = getTrendStrength(closes);
@@ -298,11 +298,6 @@ export function OpportunitiesPanel() {
             key={item.coinId}
             opportunity={item.opportunity}
             index={idx + 3}
-            synthesis={{
-              score: item.synthesis.score,
-              reasons: item.synthesis.reasons,
-              confidence: item.synthesis.confidence,
-            }}
           />
         ))}
       </div>
