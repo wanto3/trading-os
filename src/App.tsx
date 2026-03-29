@@ -4,6 +4,7 @@ import { useWatchlist } from './hooks/useWatchlist';
 import { useAlerts } from './hooks/useAlerts';
 import { useFearGreed } from './hooks/useFearGreed';
 import { Header } from './components/Header';
+import { FearBanner } from './components/FearBanner';
 import { Watchlist } from './components/Watchlist';
 import { CandlestickChart } from './components/CandlestickChart';
 import { IndicatorsPanel } from './components/IndicatorsPanel';
@@ -120,6 +121,8 @@ function Dashboard() {
         searchResults={searchResults}
         onSelectCoin={handleSelectCoin}
       />
+
+      <FearBanner />
 
       <div className="flex flex-1 overflow-hidden">
         {/* Watchlist sidebar */}

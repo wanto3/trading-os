@@ -1,5 +1,6 @@
 import type { CoinMarket, GlobalData } from '../lib/coingecko';
 import { useFearGreed } from '../hooks/useFearGreed';
+import { getSignalStrength } from './FearBanner';
 import { RefreshCw } from 'lucide-react';
 
 interface StatsPanelProps {
@@ -41,10 +42,11 @@ function FearGreedGauge({ value, classification }: { value: number; classificati
 }
 
 function getFgInterpretation(value: number): string {
-  if (value < 25) return 'Extreme fear — potential buying opportunity';
-  if (value < 45) return 'Fear — caution but potential upside';
-  if (value < 55) return 'Neutral sentiment';
-  if (value < 75) return 'Greed — some caution warranted';
+  const signal = getSignalStrength(value);
+  if (signal === 'strong_buy') return 'Extreme fear — potential buying opportunity';
+  if (signal === 'buy') return 'Fear — caution but potential upside';
+  if (signal === 'neutral') return 'Neutral sentiment';
+  if (signal === 'sell') return 'Greed — some caution warranted';
   return 'Extreme greed — take profit risk elevated';
 }
 

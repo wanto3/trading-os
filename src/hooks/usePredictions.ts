@@ -8,28 +8,32 @@ export interface PredictionMarket {
   endDate: string;
   closed: boolean;
   slug: string;
+  volume?: number;
 }
 
-interface PolymarketToken {
-  outcome: string;
-  price: number;
-  winner: boolean;
-}
-
-interface PolymarketMarket {
-  question_id: string;
+interface GammaMarket {
+  id: string;
   question: string;
-  tokens: PolymarketToken[];
-  end_date_iso: string;
+  outcomes: string;
+  outcomePrices: string;
+  endDate: string;
   closed: boolean;
-  market_slug: string;
+  slug: string;
+  volume?: number;
 }
 
-interface PolymarketResponse {
-  data: PolymarketMarket[];
-}
+const POLYMARKET_API = 'https://gamma-api.polymarket.com/markets';
 
-const POLYMARKET_API = 'https://clob.polymarket.com/markets';
+const CRYPTO_KEYWORDS = ['bitcoin', 'btc', 'ethereum', 'eth', 'crypto', 'solana', 'sol', 'dogecoin', 'xrp', 'cardano', 'ada', 'fed', 'rate', 'tariff', 'sec', 'etf', 'defi', 'nft'];
+const RELEVANCE_KEYWORDS = ['trump', 'election', 'economy', 'inflation', 'stock', 'market', 'oil', 'gold'];
+
+function getRelevance(question: string): number {
+  const q = question.toLowerCase();
+  let score = 0;
+  CRYPTO_KEYWORDS.forEach(k => { if (q.includes(k)) score += 10; });
+  RELEVANCE_KEYWORDS.forEach(k => { if (q.includes(k)) score += 3; });
+  return score;
+}
 
 export function usePredictions(refreshIntervalMs = 300000) {
   const [markets, setMarkets] = useState<PredictionMarket[]>([]);
@@ -38,28 +42,40 @@ export function usePredictions(refreshIntervalMs = 300000) {
 
   const fetchMarkets = useCallback(async () => {
     try {
-      const res = await fetch(`${POLYMARKET_API}?closed=false&active=true&limit=20`, {
+      const res = await fetch(`${POLYMARKET_API}?closed=false&limit=200`, {
         headers: { 'Accept': 'application/json' },
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const json: PolymarketResponse = await res.json();
+      const json: GammaMarket[] = await res.json();
 
-      const items: PredictionMarket[] = json.data
-        .filter(m => m.tokens && m.tokens.length >= 2)
-        .slice(0, 15)
+      const items: PredictionMarket[] = json
+        .filter(m => !m.closed)
+        .filter(m => new Date(m.endDate) > new Date())
+        .filter((m) => {
+          const outcomes: string[] = JSON.parse(m.outcomes || '[]');
+          return outcomes.some(o => o.toLowerCase() === 'yes') &&
+                 outcomes.some(o => o.toLowerCase() === 'no');
+        })
         .map(m => {
-          const yesToken = m.tokens.find(t => t.outcome.toLowerCase() === 'yes');
-          const noToken = m.tokens.find(t => t.outcome.toLowerCase() === 'no');
+          const outcomes: string[] = JSON.parse(m.outcomes || '[]');
+          const prices: string[] = JSON.parse(m.outcomePrices || '[]');
+          const yesIdx = outcomes.findIndex(o => o.toLowerCase() === 'yes');
+          const noIdx = outcomes.findIndex(o => o.toLowerCase() === 'no');
+          const yesPrice = yesIdx >= 0 ? parseFloat(prices[yesIdx]) : 0;
+          const noPrice = noIdx >= 0 ? parseFloat(prices[noIdx]) : 0;
           return {
-            id: m.question_id,
+            id: m.id,
             question: m.question,
-            yesPrice: yesToken?.price ?? 0,
-            noPrice: noToken?.price ?? 0,
-            endDate: m.end_date_iso,
+            yesPrice,
+            noPrice,
+            endDate: m.endDate,
             closed: m.closed,
-            slug: m.market_slug,
+            slug: m.slug,
+            volume: m.volume,
           };
-        });
+        })
+        .sort((a, b) => getRelevance(b.question) - getRelevance(a.question))
+        .slice(0, 15);
 
       setMarkets(items);
       setError(null);
