@@ -62,26 +62,28 @@ function computeRSI(closes: number[], period = 14): number | null {
   return 100 - 100 / (1 + avgGain / avgLoss);
 }
 
+function computeEMA(data: number[], period: number): number[] {
+  if (data.length < period) return [];
+  const k = 2 / (period + 1);
+  let ema = data.slice(0, period).reduce((a, b) => a + b, 0) / period;
+  const result: number[] = [ema];
+  for (let i = period; i < data.length; i++) {
+    ema = data[i] * k + ema * (1 - k);
+    result.push(ema);
+  }
+  return result;
+}
+
 function computeMACD(closes: number[], fast = 12, slow = 26, signal = 9) {
   if (closes.length < slow + signal) return null;
-  function ema(data: number[], period: number): number[] {
-    const k = 2 / (period + 1);
-    let ema = data.slice(0, period).reduce((a, b) => a + b, 0) / period;
-    const result: number[] = [ema];
-    for (let i = period; i < data.length; i++) {
-      ema = data[i] * k + ema * (1 - k);
-      result.push(ema);
-    }
-    return result;
-  }
-  const fastEMA = ema(closes, fast);
-  const slowEMA = ema(closes, slow);
+  const fastEMA = computeEMA(closes, fast);
+  const slowEMA = computeEMA(closes, slow);
   const macdLine: number[] = [];
   const offset = slow - fast;
   for (let i = 0; i < slowEMA.length; i++) {
     macdLine.push(fastEMA[i + offset] - slowEMA[i]);
   }
-  const macdSignalEma = ema(macdLine, signal);
+  const macdSignalEma = computeEMA(macdLine, signal);
   const lastSignal = macdSignalEma[macdSignalEma.length - 1];
   const lastMacd = macdLine[macdLine.length - 1];
   return { macdLine: lastMacd, macdSignal: lastSignal, histogram: lastMacd - lastSignal };
@@ -232,6 +234,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
     if (closes.length >= 20) {
       indicators.sma_20 = closes.slice(-20).reduce((a, b) => a + b, 0) / 20;
+    }
+    if (closes.length >= 26) {
+      const ema26Series = computeEMA(closes, 26);
+      if (ema26Series.length > 0) indicators.ema_26 = ema26Series[ema26Series.length - 1];
+      if (closes.length >= 12) {
+        const ema12Series = computeEMA(closes, 12);
+        if (ema12Series.length > 0) indicators.ema_12 = ema12Series[ema12Series.length - 1];
+      }
     }
     if (candles.length > 0) {
       const stoch = computeStochastic(candles, 14);

@@ -23,6 +23,10 @@ export interface IndicatorData {
   sma_20: number | null;
   ema_12: number | null;
   ema_26: number | null;
+  stoch_k: number | null;
+  stoch_d: number | null;
+  atr_14: number | null;
+  vwap: number | null;
 }
 
 async function apiFetch<T>(path: string): Promise<T> {
