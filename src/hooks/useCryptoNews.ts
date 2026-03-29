@@ -12,18 +12,19 @@ export interface NewsItem {
   categories: string[];
 }
 
-interface CryptoCompareNewsItem {
-  id: string;
+interface CoinGeckoNewsItem {
+  id: number;
   title: string;
-  source: string;
-  published_on: number;
+  description: string;
+  author: string;
   url: string;
-  categories: string;
-  sentiment?: number;
+  news_site: string;
+  created_at: number;
+  thumb_2x: string;
 }
 
-interface CryptoCompareResponse {
-  Data: CryptoCompareNewsItem[];
+interface CoinGeckoNewsResponse {
+  data: CoinGeckoNewsItem[];
 }
 
 const POSITIVE_KEYWORDS = ['surge', 'bullish', 'record', 'growth', 'adoption', 'approval', 'upgrade', 'rally', 'gain', 'soar', 'jump', 'boom', 'high'];
@@ -50,18 +51,18 @@ export function useCryptoNews(refreshIntervalMs = 300000) {
 
   const fetchNews = useCallback(async () => {
     try {
-      const res = await fetch('https://min-api.cryptocompare.com/data/v2/news/?lang=EN');
+      const res = await fetch('https://api.coingecko.com/api/v3/news?page=1');
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const json: CryptoCompareResponse = await res.json();
+      const json: CoinGeckoNewsResponse = await res.json();
 
-      const items: NewsItem[] = json.Data.slice(0, 20).map((item) => ({
-        id: item.id,
+      const items: NewsItem[] = json.data.slice(0, 20).map((item) => ({
+        id: String(item.id),
         title: item.title,
-        source: item.source,
-        publishedAt: new Date(item.published_on * 1000),
+        source: item.news_site,
+        publishedAt: new Date(item.created_at * 1000),
         url: item.url,
         sentiment: inferSentiment(item.title),
-        categories: (item.categories || '').split('|').filter(Boolean),
+        categories: [],
       }));
 
       setNews(items);
