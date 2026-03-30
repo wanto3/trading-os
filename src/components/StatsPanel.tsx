@@ -192,12 +192,12 @@ export function StatsPanel({ coins, globalData }: StatsPanelProps) {
               </div>
               <div className="flex items-baseline gap-2">
                 <span className="font-mono text-sm font-bold text-text-primary">
-                  {btc.current_price != null
+                  {btc.current_price !== undefined && btc.current_price !== null && !isNaN(btc.current_price)
                     ? `$${btc.current_price.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
                     : '—'}
                 </span>
                 <span className={`font-mono text-[11px] ${drawdownPct >= 0 ? 'text-loss' : 'text-gain'}`}>
-                  {drawdownPct >= 0 ? '' : '+'}{drawdownPct.toFixed(1)}% from ATH
+                  {drawdownPct >= 0 ? '' : '+'}{!isNaN(drawdownPct) ? drawdownPct.toFixed(1) : '0.0'}% from ATH
                 </span>
               </div>
               {/* ATH reference */}
@@ -219,14 +219,14 @@ export function StatsPanel({ coins, globalData }: StatsPanelProps) {
               <div key={coin.id} className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-1.5 min-w-0">
                   <span className="text-text-secondary text-[10px] w-3 shrink-0">{i + 2}</span>
-                  <img src={coin.image} alt={coin.name} className="w-4 h-4 rounded-full shrink-0" />
+                  <img src={coin.image || ''} alt={coin.name} className="w-4 h-4 rounded-full shrink-0" onError={(e) => { (e.target as HTMLImageElement).src = `https://assets.coingecko.com/coins/images/1/small/${coin.id}.png`; }} />
                   <span className="text-text-primary text-xs truncate">{coin.symbol.toUpperCase()}</span>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <span className={`text-[10px] font-mono ${coin.price_change_percentage_24h >= 0 ? 'text-gain' : 'text-loss'}`}>
-                    {coin.price_change_percentage_24h >= 0 ? '+' : ''}{coin.price_change_percentage_24h?.toFixed(1)}%
+                  <span className={`text-[10px] font-mono ${(coin.price_change_percentage_24h || 0) >= 0 ? 'text-gain' : 'text-loss'}`}>
+                    {(coin.price_change_percentage_24h || 0) >= 0 ? '+' : ''}{!isNaN(coin.price_change_percentage_24h) ? coin.price_change_percentage_24h.toFixed(1) : '0.0'}%
                   </span>
-                  <span className="font-mono text-xs text-text-primary">${(coin.market_cap / 1e9).toFixed(0)}B</span>
+                  <span className="font-mono text-xs text-text-primary">${((coin.market_cap || 0) / 1e9).toFixed(0)}B</span>
                 </div>
               </div>
             ))}

@@ -34,11 +34,19 @@ function Dashboard() {
   useEffect(() => {
     Promise.all([getMarketCoins(1, 50), getGlobalData()])
       .then(([coinsData, global]) => {
+        if (!coinsData || coinsData.length === 0) {
+          console.warn('Empty coins data from API');
+          setLoading(false);
+          return;
+        }
         setCoins(coinsData);
         setGlobalData(global.data);
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch((err) => {
+        console.error('Failed to fetch market data:', err);
+        setLoading(false);
+      });
   }, []);
 
   useEffect(() => {

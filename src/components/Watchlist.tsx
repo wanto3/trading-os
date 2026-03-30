@@ -53,7 +53,7 @@ export function Watchlist({ coins, favorites, onToggleFavorite }: WatchlistProps
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 min-w-0">
-                  <img src={coin.image || ''} alt={coin.name || coin.symbol || ''} className="w-5 h-5 rounded-full shrink-0" />
+                  <img src={coin.image || ''} alt={coin.name || coin.symbol || ''} className="w-5 h-5 rounded-full shrink-0" onError={(e) => { (e.target as HTMLImageElement).src = `https://assets.coingecko.com/coins/images/1/small/${coin.id}.png`; }} />
                   <span className="text-text-primary text-sm font-medium truncate">{(coin.symbol || '').toUpperCase()}</span>
                 </div>
                 <button
@@ -69,7 +69,7 @@ export function Watchlist({ coins, favorites, onToggleFavorite }: WatchlistProps
               <div className="flex items-center justify-between mt-1">
                 <div className="flex items-center gap-2">
                   <span className="font-mono text-sm font-semibold text-text-primary">
-                    {coin.current_price != null
+                    {coin.current_price !== undefined && coin.current_price !== null && !isNaN(coin.current_price)
                       ? `$${coin.current_price < 1 ? coin.current_price.toFixed(6) : coin.current_price.toLocaleString(undefined, { maximumFractionDigits: 2 })}`
                       : '—'}
                   </span>
@@ -81,7 +81,7 @@ export function Watchlist({ coins, favorites, onToggleFavorite }: WatchlistProps
                     <TrendingDown size={12} className="text-loss" />
                   )}
                   <span className={`font-mono text-xs font-semibold ${positive ? 'text-gain' : 'text-loss'}`}>
-                    {positive ? '+' : ''}{coin.price_change_percentage_24h?.toFixed(2) || '0.00'}%
+                    {positive ? '+' : ''}{!isNaN(coin.price_change_percentage_24h) ? coin.price_change_percentage_24h.toFixed(2) : '0.00'}%
                   </span>
                 </div>
               </div>
