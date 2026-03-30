@@ -10,7 +10,7 @@ export async function GET(request: Request) {
     const url = `${CG_BASE}/coins/${encodeURIComponent(coinId)}/ohlc?vs_currency=usd&days=${days}`;
     const resp = await fetch(url, { signal: AbortSignal.timeout(10000) });
     if (!resp.ok) { return NextResponse.json({ error: 'CoinGecko API error', status: resp.status }, { status: 502 }); }
-    const data = (await resp.json()) as number[][];
+    const data = (await resp.json()) as Array<[number, number, number, number, number]>;
     return NextResponse.json({ data });
   } catch (err) {
     console.error('CoinGecko OHLC error:', err);
