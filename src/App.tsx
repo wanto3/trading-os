@@ -11,6 +11,7 @@ import { IndicatorsPanel } from './components/IndicatorsPanel';
 import { NewsPanel } from './components/NewsPanel';
 import { PredictionsPanel } from './components/PredictionsPanel';
 import { OpportunitiesPanel } from './components/OpportunitiesPanel';
+import { FundingRatesPanel } from './components/FundingRatesPanel';
 import { AlertModal } from './components/AlertModal';
 import { FearBanner } from './components/FearBanner';
 import { Toast } from './components/Toast';

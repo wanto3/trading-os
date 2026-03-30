@@ -1,5 +1,6 @@
 import type { CoinMarket, GlobalData } from '../lib/coingecko';
 import { useFearGreed } from '../hooks/useFearGreed';
+import { FundingRatesPanel } from './FundingRatesPanel';
 import { RefreshCw } from 'lucide-react';
 
 const BTC_ATH = 126080; // CoinGecko BTC all-time high
@@ -69,7 +70,7 @@ export function StatsPanel({ coins, globalData }: StatsPanelProps) {
   const topCoins = coins.slice(0, 5);
 
   return (
-    <div className="grid grid-cols-3 gap-4 h-full">
+    <div className="grid grid-cols-4 gap-4 h-full">
       {/* Fear & Greed Index */}
       <div className="bg-bg-primary rounded-lg p-3 border border-border-subtle flex flex-col">
         <div className="flex items-center justify-between mb-1">
@@ -228,6 +229,14 @@ export function StatsPanel({ coins, globalData }: StatsPanelProps) {
               </div>
             ))}
           </div>
+        </div>
+      </div>
+
+      {/* Funding Rates */}
+      <div className="flex flex-col min-w-0 overflow-hidden">
+        <h3 className="text-text-secondary text-[10px] font-semibold uppercase tracking-wider mb-2">Funding Rates (BTC)</h3>
+        <div className="flex-1 overflow-y-auto">
+          <FundingRatesPanel />
         </div>
       </div>
     </div>
