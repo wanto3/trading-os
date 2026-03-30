@@ -169,9 +169,9 @@ export function OpportunitiesPanel() {
                   [
                     coin.id,
                     coin.symbol,
-                    coin.name.toLowerCase(),
-                    coin.symbol.toUpperCase(),
-                    coin.name.toLowerCase().split(' ')[0],
+                    (coin.name || '').toLowerCase(),
+                    (coin.symbol || '').toUpperCase(),
+                    (coin.name || '').toLowerCase().split(' ')[0],
                   ].some((k) =>
                     item.title.toLowerCase().includes(k.toLowerCase())
                   )

@@ -104,27 +104,31 @@ export function CandlestickChart() {
           throw new Error('No data available');
         }
 
-        // CoinGecko returns [timestamp_ms, open, high, low, close][] per candle
-        const candleData: CandlestickData<Time>[] = ohlcData.map(d => ({
-          time: Math.floor(d[0] / 1000) as Time,
-          open: d[1],
-          high: d[2],
-          low: d[3],
-          close: d[4],
-        }));
+        // Chart data format: [timestamp_ms, open, high, low, close, volume][]
+        const candleData: CandlestickData<Time>[] = ohlcData
+          .filter(d => d && d.length >= 5)
+          .map(d => ({
+            time: Math.floor((d[0] ?? 0) / 1000) as Time,
+            open: d[1] ?? 0,
+            high: d[2] ?? 0,
+            low: d[3] ?? 0,
+            close: d[4] ?? 0,
+          }));
 
-        // Calculate volume from price changes (approximate)
-        const volumeData: HistogramData<Time>[] = ohlcData.map((d, i) => {
-          const open = d[1];
-          const close = d[4];
-          const nextOpen = ohlcData[i + 1]?.[1] ?? close;
-          const volatility = Math.abs(close - open) * 1e8;
-          return {
-            time: Math.floor(d[0] / 1000) as Time,
-            value: Math.max(volatility, 1e6),
-            color: close >= open ? 'rgba(63,185,80,0.3)' : 'rgba(248,81,73,0.3)',
-          };
-        });
+        // Volume from the 6th element or approximate from price changes
+        const volumeData: HistogramData<Time>[] = ohlcData
+          .filter(d => d && d.length >= 5)
+          .map((d, i) => {
+            const open = d[1] ?? 0;
+            const close = d[4] ?? 0;
+            const volume = d[5];
+            const value = (volume && volume > 0) ? volume : Math.max(Math.abs(close - open) * 1e8, 1e6);
+            return {
+              time: Math.floor((d[0] ?? 0) / 1000) as Time,
+              value,
+              color: close >= open ? 'rgba(63,185,80,0.3)' : 'rgba(248,81,73,0.3)',
+            };
+          });
 
         candleRef.current!.setData(candleData);
         volumeRef.current!.setData(volumeData);

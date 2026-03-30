@@ -47,7 +47,7 @@ export interface GlobalData {
 
 export function getMarketCoins(page = 1, perPage = 50) {
   return fetchWithCache<CoinMarket[]>(
-    `/api/coingecko/market-coins?page=${page}&per_page=${perPage}`, 60000
+    `/api/coins?page=${page}&per_page=${perPage}`, 60000
   );
 }
 
@@ -58,9 +58,9 @@ export function searchCoins(query: string) {
 }
 
 export function getOhlc(coinId: string, days = 7) {
-  // CoinGecko returns number[][]: [timestamp, open, high, low, close]
+  // Returns number[][]: [timestamp_ms, open, high, low, close, volume]
   return fetchWithCache<number[][]>(
-    `/api/coingecko/ohlc?coin_id=${encodeURIComponent(coinId)}&days=${days}`, 300000
+    `/api/chart-data?coin_id=${encodeURIComponent(coinId)}&days=${days}`, 300000
   );
 }
 
@@ -75,6 +75,6 @@ export interface ChartPoint {
 
 export function getMarketChart(coinId: string, days = 365) {
   return fetchWithCache<{ prices: [number, number][]; market_caps: [number, number][]; total_volumes: [number, number][] }>(
-    `/api/coingecko/market-chart?coin_id=${encodeURIComponent(coinId)}&days=${days}`, 300000
+    `/api/chart-data?coin_id=${encodeURIComponent(coinId)}&days=${days}`, 300000
   );
 }
