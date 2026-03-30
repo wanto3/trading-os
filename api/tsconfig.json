@@ -10,5 +10,6 @@
     "outDir": "../api-dist",
     "noEmit": true
   },
-  "include": ["./**/*.ts"]
+  "include": ["./**/*.ts"],
+  "exclude": ["./**/*.test.ts"]
 }

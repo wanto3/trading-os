@@ -140,7 +140,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         signal: AbortSignal.timeout(10000),
       });
       if (resp.ok) {
-        cgData = await resp.json();
+        cgData = await resp.json() as typeof cgData;
       }
     } catch {
       // proceed with empty market data

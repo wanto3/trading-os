@@ -216,7 +216,7 @@ async function fetchEthWhaleData(): Promise<{
 }
 
 function buildBtcSignal(
-  data: NonNullable<ReturnType<typeof fetchBtcWhaleData>>,
+  data: { whaleAccumulation: number; exchangeNetFlow: number; activeAddresses: number; largeTxVolume24h: number },
   btcPrice: number
 ): WhaleSignal {
   const score = Math.round(data.whaleAccumulation * 100);
@@ -259,7 +259,7 @@ function buildBtcSignal(
 }
 
 function buildEthSignal(
-  data: NonNullable<ReturnType<typeof fetchEthWhaleData>>
+  data: { whaleAccumulation: number; exchangeNetFlow: number; activeAddresses: number; largeTxVolume24h: number }
 ): WhaleSignal {
   const score = Math.round(data.whaleAccumulation * 100);
 

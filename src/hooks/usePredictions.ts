@@ -37,7 +37,7 @@ export interface PolymarketData {
   timestamp: number;
 }
 
-const API_BASE = import.meta.env.VITE_API_URL || '';
+const API_BASE = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL) || '';
 
 async function apiFetch<T>(path: string): Promise<T> {
   const res = await fetch(`${API_BASE}/api${path}`);

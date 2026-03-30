@@ -222,7 +222,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   };
 
   // Attach BTC price change to response for divergence calculation
-  (response as Record<string, unknown>).btcPriceChange24h = btcPriceChange24h;
+  (response as unknown as Record<string, unknown>).btcPriceChange24h = btcPriceChange24h;
 
   res.json({ data: response });
 }
