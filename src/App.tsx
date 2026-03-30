@@ -15,6 +15,7 @@ import { FundingRatesPanel } from './components/FundingRatesPanel';
 import { AlertModal } from './components/AlertModal';
 import { FearBanner } from './components/FearBanner';
 import { Toast } from './components/Toast';
+import { ChartErrorBoundary } from './components/ChartErrorBoundary';
 import { getMarketCoins, getGlobalData, searchCoins } from './lib/coingecko';
 import type { CoinMarket, GlobalData } from './lib/coingecko';
 
@@ -109,7 +110,9 @@ function Dashboard() {
 
         <div className="flex-1 flex flex-col overflow-hidden">
           <div className="flex-[3] min-h-0">
-            <CandlestickChart key={selectedCoinId} />
+            <ChartErrorBoundary>
+              <CandlestickChart key={selectedCoinId} />
+            </ChartErrorBoundary>
           </div>
 
           {selectedCoin && (

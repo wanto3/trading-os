@@ -122,8 +122,11 @@ export function CandlestickChart() {
       try {
         const symbol = coingeckoIdToSymbol(selectedCoinId);
         const res = await fetch(`/api/candles/${encodeURIComponent(symbol)}?interval=${timeframe.interval}&limit=${timeframe.limit}`);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const json = await res.json() as { data: Array<{ openTime: number; open: number; high: number; low: number; close: number; volume: number }> };
+        const json = await res.json() as { data?: Array<{ openTime: number; open: number; high: number; low: number; close: number; volume: number }>; error?: string };
+        if (!res.ok || !json.data) {
+          const msg = json.error ?? `HTTP ${res.status}`;
+          throw new Error(msg);
+        }
         const rawData = json.data;
 
         const candleData: CandlestickData<Time>[] = rawData.map(d => ({
@@ -143,7 +146,7 @@ export function CandlestickChart() {
         volumeRef.current!.setData(volumeData);
         chartApiRef.current?.timeScale().fitContent();
       } catch (e) {
-        setError('Failed to load chart data');
+        setError(e instanceof Error ? e.message : 'Failed to load chart data');
       } finally {
         setLoading(false);
       }
