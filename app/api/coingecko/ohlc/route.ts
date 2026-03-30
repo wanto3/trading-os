@@ -55,9 +55,11 @@ export async function GET(request: Request) {
     const ohlcv = Array.from(dayMap.values())
       .map(d => [d.ts, d.open, d.high, d.low, d.close, d.volume])
       .sort((a, b) => (a[0] as number) - (b[0] as number));
-    return NextResponse.json({ data: ohlcv }, {
+    return NextResponse.json({ _route: 'app-router-ohlc-v2', data: ohlcv }, {
       headers: {
-        'Cache-Control': 'public, max-age=300, stale-while-revalidate=600',
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
       },
     });
   } catch (err) {

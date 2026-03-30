@@ -31,9 +31,11 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'CoinGecko API error', status: resp.status }, { status: 502 });
     }
     const data = (await resp.json()) as unknown[];
-    return NextResponse.json({ data }, {
+    return NextResponse.json({ _route: 'app-router-market-coins-v2', data }, {
       headers: {
-        'Cache-Control': 'public, max-age=60, stale-while-revalidate=300',
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
       },
     });
   } catch (err) {
