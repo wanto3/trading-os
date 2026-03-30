@@ -1,7 +1,8 @@
 import { usePiCycle } from '../hooks/usePiCycle';
 import { TrendingUp, TrendingDown, Minus, Zap } from 'lucide-react';
 
-function formatBtcPrice(price: number): string {
+function formatBtcPrice(price: number | null | undefined): string {
+  if (price == null) return '—';
   if (price >= 100000) return '$' + (price / 1000).toFixed(0) + 'K';
   return '$' + price.toLocaleString('en-US', { maximumFractionDigits: 0 });
 }

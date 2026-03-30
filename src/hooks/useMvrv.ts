@@ -9,7 +9,7 @@ export interface MvrvData {
   signal: 'buy' | 'hold' | 'sell';
   signalLabel: string;
   signalReason: string;
-  btcPrice: number;
+  btcPrice: number | null;
   marketCap: number;
   realizedCap: number;
   timestamp: number;

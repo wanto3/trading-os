@@ -192,7 +192,9 @@ export function StatsPanel({ coins, globalData }: StatsPanelProps) {
               </div>
               <div className="flex items-baseline gap-2">
                 <span className="font-mono text-sm font-bold text-text-primary">
-                  ${btc.current_price.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                  {btc.current_price != null
+                    ? `$${btc.current_price.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
+                    : '—'}
                 </span>
                 <span className={`font-mono text-[11px] ${drawdownPct >= 0 ? 'text-loss' : 'text-gain'}`}>
                   {drawdownPct >= 0 ? '' : '+'}{drawdownPct.toFixed(1)}% from ATH

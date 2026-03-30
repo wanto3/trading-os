@@ -1,7 +1,8 @@
 import { useMvrv } from '../hooks/useMvrv';
 import { TrendingUp, TrendingDown, Minus, Activity } from 'lucide-react';
 
-function formatBtcPrice(price: number): string {
+function formatBtcPrice(price: number | null | undefined): string {
+  if (price == null) return '—';
   if (price >= 100000) return '$' + (price / 1000).toFixed(0) + 'K';
   if (price >= 1) return '$' + price.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
   return '$' + price.toFixed(2);

@@ -69,7 +69,9 @@ export function Watchlist({ coins, favorites, onToggleFavorite }: WatchlistProps
               <div className="flex items-center justify-between mt-1">
                 <div className="flex items-center gap-2">
                   <span className="font-mono text-sm font-semibold text-text-primary">
-                    ${coin.current_price < 1 ? coin.current_price.toFixed(6) : coin.current_price.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                    {coin.current_price != null
+                      ? `$${coin.current_price < 1 ? coin.current_price.toFixed(6) : coin.current_price.toLocaleString(undefined, { maximumFractionDigits: 2 })}`
+                      : '—'}
                   </span>
                 </div>
                 <div className="flex items-center gap-1">
