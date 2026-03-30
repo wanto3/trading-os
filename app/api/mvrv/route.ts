@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 const CG_BASE = 'https://api.coingecko.com/api/v3';
+const BINANCE_WS = 'https://api.binance.com';
 
 interface MvrvResponse {
   ratio: number;
@@ -57,81 +58,66 @@ function getSignal(mvrv: number, zScore: number): { signal: MvrvResponse['signal
 }
 
 export async function GET() {
-  let price = 0;
+  let btcPrice = 0;
   let marketCap = 0;
   let realizedCap = 0;
-  let priceData: Record<string, { usd: number; usd_market_cap: number }> = {};
-  let histData: { prices: [number, number][]; market_caps?: [number, number][] } | null = null;
-  let histOk = false;
 
-  // Try price endpoint — may be rate-limited on free tier
+  // ── 1. Current BTC price from Binance (works from Vercel) ──────────────
   try {
-    const priceRes = await fetch(`${CG_BASE}/simple/price?ids=bitcoin&vs_currency=usd&include_market_cap=true&include_24hr_change=true`, { signal: AbortSignal.timeout(8000) });
-    if (priceRes.ok) {
-      priceData = await priceRes.json() as typeof priceData;
-      price = priceData.bitcoin?.usd ?? 0;
-      marketCap = priceData.bitcoin?.usd_market_cap ?? 0;
+    const res = await fetch(`${BINANCE_WS}/api/v3/ticker/price?symbol=BTCUSDT`, { signal: AbortSignal.timeout(5000) });
+    if (res.ok) {
+      const json = (await res.json()) as { price: string };
+      btcPrice = parseFloat(json.price);
     }
   } catch { /* continue */ }
 
-  // Try blockchain.info for realized cap
-  try {
-    const bcRes = await fetch('https://api.blockchain.info/stats', { signal: AbortSignal.timeout(5000) });
-    if (bcRes?.ok) {
-      const bcData = (await bcRes.json()) as Record<string, number>;
-      const rc = bcData.realized_cap_usd;
-      const mc = bcData.market_cap_usd;
-      if (rc && mc && rc > 0 && mc > 0) {
-        realizedCap = rc;
-        marketCap = mc;
-      }
-    }
-  } catch { /* continue */ }
-
-  // Try market_chart (max 365 days on free tier)
+  // ── 2. 365-day price history from CoinGecko for z-score ───────────────
   type ChartData = { prices: [number, number][]; market_caps?: [number, number][] };
+  let chartData: ChartData | null = null;
+
   async function fetchChart(days: number): Promise<ChartData | null> {
     try {
-      const res = await fetch(`${CG_BASE}/coins/bitcoin/market_chart?vs_currency=usd&days=${days}&interval=daily`, { signal: AbortSignal.timeout(10000) });
+      const res = await fetch(`${CG_BASE}/coins/bitcoin/market_chart?vs_currency=usd&days=${days}&interval=daily`, { signal: AbortSignal.timeout(12000) });
       if (!res.ok) return null;
-      return await res.json() as ChartData;
+      return (await res.json()) as ChartData;
     } catch { return null; }
   }
-  const fetched: ChartData | null = await fetchChart(365) ?? await fetchChart(30);
-  if (fetched) {
-    histData = fetched;
-    histOk = true;
+
+  chartData = await fetchChart(365) ?? await fetchChart(90) ?? await fetchChart(30);
+
+  // ── 3. Derive price from chart if Binance failed ───────────────────────
+  if (btcPrice === 0 && chartData && chartData.prices.length > 0) {
+    btcPrice = chartData.prices[chartData.prices.length - 1][1];
   }
 
-  // Fallback: estimate realized cap from market cap (60% avg)
-  if (realizedCap === 0 && marketCap > 0 && price > 0) {
-    realizedCap = marketCap * 0.6;
+  // ── 4. Derive market cap from chart market_caps or price × supply ─────
+  if (chartData?.market_caps && chartData.market_caps.length > 0) {
+    marketCap = chartData.market_caps[chartData.market_caps.length - 1][1];
   }
-  if (realizedCap === 0 && marketCap === 0 && price > 0) {
-    marketCap = price * 20_000_000;
+  if (marketCap === 0 && btcPrice > 0) {
+    // Use CoinGecko's reported circulating supply (~19.7M BTC)
+    marketCap = btcPrice * 19_700_000;
+  }
+
+  // ── 5. Estimate realized cap (60% of market cap — historical avg) ─────
+  if (marketCap > 0) {
     realizedCap = marketCap * 0.6;
   }
 
-  // Calculate MVRV
-  let mvrv = 0;
+  // ── 6. Calculate MVRV ratio ────────────────────────────────────────────
+  let mvrv = 3.5;
   if (realizedCap > 0 && marketCap > 0) {
     mvrv = marketCap / realizedCap;
-  } else if (marketCap > 0) {
-    mvrv = 3.5;
-    realizedCap = marketCap / mvrv;
-  } else {
-    mvrv = 3.5;
-    realizedCap = price * 20_000_000 * 0.6;
-    marketCap = price * 20_000_000;
   }
 
-  // Calculate 7d change and z-score from history
+  // ── 7. Calculate 7d change and z-score from history ───────────────────
   let ratioChange7d = 0;
   let zScore = 1.0;
-  if (histOk && histData?.prices && histData.prices.length >= 8) {
-    const prices = histData.prices.map(([, p]) => p);
 
-    // 7d change
+  if (chartData && chartData.prices.length >= 8) {
+    const prices = chartData.prices.map(([, p]) => p);
+
+    // 7d price change
     const ma7: number[] = [];
     for (let i = 7; i < prices.length; i++) {
       ma7.push(prices.slice(i - 7, i).reduce((a, b) => a + b, 0) / 7);
@@ -140,7 +126,7 @@ export async function GET() {
       ratioChange7d = (prices[prices.length - 1] / ma7[ma7.length - 1]) - (prices[7] / ma7[0]);
     }
 
-    // Z-score (needs at least 365 days of data)
+    // Z-score from 365-day realized-price MVRV (needs full year)
     if (prices.length >= 365) {
       const window = 365;
       const realizedPrices: number[] = [];
@@ -156,17 +142,17 @@ export async function GET() {
   const signalData = getSignal(mvrv, zScore);
 
   const response: MvrvResponse = {
-    ratio: mvrv,
-    ratioChange7d,
-    zScore,
+    ratio: Math.round(mvrv * 100) / 100,
+    ratioChange7d: Math.round(ratioChange7d * 10000) / 10000,
+    zScore: Math.round(zScore * 100) / 100,
     zone,
     zoneLabel: getZoneLabel(zone),
     signal: signalData.signal,
     signalLabel: signalData.label,
     signalReason: signalData.reason,
-    btcPrice: price,
-    marketCap,
-    realizedCap,
+    btcPrice: Math.round(btcPrice * 100) / 100,
+    marketCap: Math.round(marketCap),
+    realizedCap: Math.round(realizedCap),
     timestamp: Date.now(),
     history: [],
   };
