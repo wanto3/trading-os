@@ -15,6 +15,8 @@ const COINGECKO_IDS: Record<string, string> = {
   ENJ: 'enjincoin', ZIL: 'zilliqa', ENS: 'ethereum-name-service',
 };
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const ids = Object.values(COINGECKO_IDS).join(',');
@@ -45,7 +47,7 @@ export async function GET() {
       };
     });
 
-    return NextResponse.json({ data: prices });
+    return NextResponse.json({ _endpoint: 'prices', data: prices });
   } catch (err) {
     console.error('Prices API error:', err);
     return NextResponse.json({ error: 'Failed to fetch prices' }, { status: 500 });

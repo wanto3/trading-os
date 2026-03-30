@@ -40,7 +40,7 @@ export async function GET(request: Request) {
       sparkline_in_7d: coin.sparkline_in_7d,
       total_volume: coin.total_volume ?? 0,
     }));
-    return NextResponse.json({ data });
+    return NextResponse.json({ _endpoint: 'coins', data });
   } catch (err) {
     console.error('CoinGecko markets error:', err);
     return NextResponse.json({ error: 'Failed to fetch market coins' }, { status: 500 });
