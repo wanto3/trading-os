@@ -2,5 +2,37 @@
   "framework": "nextjs",
   "buildCommand": "npm run build",
   "outputDirectory": ".next",
-  "installCommand": "npm install"
+  "installCommand": "npm install",
+  "functions": {
+    "app/api/coins/route.ts": {
+      "runtime": "nodejs24.x",
+      "memory": 1024,
+      "maxDuration": 10
+    },
+    "app/api/chart-data/route.ts": {
+      "runtime": "nodejs24.x",
+      "memory": 1024,
+      "maxDuration": 10
+    },
+    "app/api/prices/route.ts": {
+      "runtime": "nodejs24.x",
+      "memory": 1024,
+      "maxDuration": 10
+    },
+    "app/api/candles/route.ts": {
+      "runtime": "nodejs24.x",
+      "memory": 1024,
+      "maxDuration": 10
+    },
+    "app/api/indicators/route.ts": {
+      "runtime": "nodejs24.x",
+      "memory": 1024,
+      "maxDuration": 10
+    },
+    "app/api/funding-rates/route.ts": {
+      "runtime": "nodejs24.x",
+      "memory": 1024,
+      "maxDuration": 10
+    }
+  }
 }
