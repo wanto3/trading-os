@@ -81,7 +81,7 @@ export function Watchlist({ coins, favorites, onToggleFavorite }: WatchlistProps
                     <TrendingDown size={12} className="text-loss" />
                   )}
                   <span className={`font-mono text-xs font-semibold ${positive ? 'text-gain' : 'text-loss'}`}>
-                    {positive ? '+' : ''}{!isNaN(coin.price_change_percentage_24h) ? coin.price_change_percentage_24h.toFixed(2) : '0.00'}%
+                    {positive ? '+' : ''}{coin.price_change_percentage_24h != null && !isNaN(coin.price_change_percentage_24h) ? coin.price_change_percentage_24h.toFixed(2) : '0.00'}%
                   </span>
                 </div>
               </div>

@@ -61,11 +61,11 @@ function getFgInterpretation(value: number): string {
 export function StatsPanel({ coins, globalData }: StatsPanelProps) {
   const { data, loading, error, refetch } = useFearGreed();
 
-  const totalMarketCap = globalData?.total_market_cap?.usd || 0;
-  const totalVolume = globalData?.total_volume?.usd || 0;
-  const btcDom = globalData?.market_cap_percentage?.btc || 0;
-  const ethDom = globalData?.market_cap_percentage?.eth || 0;
-  const marketChange = globalData?.market_cap_change_percentage_24h_usd || 0;
+  const totalMarketCap = globalData?.total_market_cap?.usd ?? 0;
+  const totalVolume = globalData?.total_volume?.usd ?? 0;
+  const btcDom = globalData?.market_cap_percentage?.btc ?? 0;
+  const ethDom = globalData?.market_cap_percentage?.eth ?? 0;
+  const marketChange = globalData?.market_cap_change_percentage_24h_usd ?? 0;
 
   const topCoins = coins.slice(0, 5);
 
@@ -197,7 +197,7 @@ export function StatsPanel({ coins, globalData }: StatsPanelProps) {
                     : '—'}
                 </span>
                 <span className={`font-mono text-[11px] ${drawdownPct >= 0 ? 'text-loss' : 'text-gain'}`}>
-                  {drawdownPct >= 0 ? '' : '+'}{!isNaN(drawdownPct) ? drawdownPct.toFixed(1) : '0.0'}% from ATH
+                  {drawdownPct >= 0 ? '' : '+'}{drawdownPct != null && !isNaN(drawdownPct) ? drawdownPct.toFixed(1) : '0.0'}% from ATH
                 </span>
               </div>
               {/* ATH reference */}
@@ -224,7 +224,7 @@ export function StatsPanel({ coins, globalData }: StatsPanelProps) {
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <span className={`text-[10px] font-mono ${(coin.price_change_percentage_24h || 0) >= 0 ? 'text-gain' : 'text-loss'}`}>
-                    {(coin.price_change_percentage_24h || 0) >= 0 ? '+' : ''}{!isNaN(coin.price_change_percentage_24h) ? coin.price_change_percentage_24h.toFixed(1) : '0.0'}%
+                    {(coin.price_change_percentage_24h || 0) >= 0 ? '+' : ''}{coin.price_change_percentage_24h != null && !isNaN(coin.price_change_percentage_24h) ? coin.price_change_percentage_24h.toFixed(1) : '0.0'}%
                   </span>
                   <span className="font-mono text-xs text-text-primary">${((coin.market_cap || 0) / 1e9).toFixed(0)}B</span>
                 </div>

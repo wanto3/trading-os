@@ -29,7 +29,7 @@ function Dashboard() {
   const [searchResults, setSearchResults] = useState<Array<{ id: string; name: string; symbol: string; thumb: string }>>([]);
   const [alertModalCoin, setAlertModalCoin] = useState<CoinMarket | null>(null);
   const [toast, setToast] = useState<string | null>(null);
-  const [, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     Promise.all([getMarketCoins(1, 50), getGlobalData()])
