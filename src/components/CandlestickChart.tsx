@@ -104,7 +104,10 @@ export function CandlestickChart() {
           throw new Error('No data available');
         }
 
-        // Chart data format: [timestamp_ms, open, high, low, close, volume][]
+        if (ohlcData.length === 0) {
+          throw new Error('No candle data available');
+        }
+
         const candleData: CandlestickData<Time>[] = ohlcData
           .filter(d => d && d.length >= 5)
           .map(d => ({
@@ -115,10 +118,9 @@ export function CandlestickChart() {
             close: d[4] ?? 0,
           }));
 
-        // Volume from the 6th element or approximate from price changes
         const volumeData: HistogramData<Time>[] = ohlcData
           .filter(d => d && d.length >= 5)
-          .map((d, i) => {
+          .map(d => {
             const open = d[1] ?? 0;
             const close = d[4] ?? 0;
             const volume = d[5];

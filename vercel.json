@@ -5,32 +5,32 @@
   "installCommand": "npm install",
   "functions": {
     "app/api/coins/route.ts": {
-      "runtime": "nodejs24.x",
+      "runtime": "nodejs",
       "memory": 1024,
       "maxDuration": 10
     },
     "app/api/chart-data/route.ts": {
-      "runtime": "nodejs24.x",
+      "runtime": "nodejs",
       "memory": 1024,
       "maxDuration": 10
     },
     "app/api/prices/route.ts": {
-      "runtime": "nodejs24.x",
+      "runtime": "nodejs",
       "memory": 1024,
       "maxDuration": 10
     },
     "app/api/candles/route.ts": {
-      "runtime": "nodejs24.x",
+      "runtime": "nodejs",
       "memory": 1024,
       "maxDuration": 10
     },
     "app/api/indicators/route.ts": {
-      "runtime": "nodejs24.x",
+      "runtime": "nodejs",
       "memory": 1024,
       "maxDuration": 10
     },
     "app/api/funding-rates/route.ts": {
-      "runtime": "nodejs24.x",
+      "runtime": "nodejs",
       "memory": 1024,
       "maxDuration": 10
     }
