@@ -6,12 +6,12 @@ export interface FearGreedData {
   timestamp: Date;
 }
 
-interface FearGreedResponse {
-  data: Array<{
+interface FearGreedProxyResponse {
+  data: {
     value: string;
     value_classification: string;
     timestamp: string;
-  }>;
+  };
 }
 
 export function useFearGreed(refreshIntervalMs = 300000) {
@@ -21,10 +21,10 @@ export function useFearGreed(refreshIntervalMs = 300000) {
 
   const fetchFearGreed = useCallback(async () => {
     try {
-      const res = await fetch('https://api.alternative.me/fng/?limit=1');
+      const res = await fetch('/api/fear-greed');
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const json: FearGreedResponse = await res.json();
-      const item = json.data[0];
+      const json: FearGreedProxyResponse = await res.json();
+      const item = json.data;
       if (!item) throw new Error('No data returned');
 
       setData({
