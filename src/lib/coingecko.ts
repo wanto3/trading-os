@@ -1,4 +1,6 @@
-const CG_BASE = 'https://api.coingecko.com/api/v3';
+// Call backend proxy routes which bypass CORS (server-to-server)
+const API_BASE = '';
+
 const cache = new Map<string, { data: unknown; expiry: number }>();
 
 // Generic cache wrapper for any API endpoint
@@ -24,9 +26,32 @@ async function fetchWithCache<T>(url: string, cacheMs = 300000): Promise<T> {
   return data as T;
 }
 
-// Call CoinGecko API directly (no proxy, avoids Vercel serverless cold start issues)
+export interface CoinMarket {
+  id: string;
+  symbol: string;
+  name: string;
+  image: string;
+  current_price: number;
+  market_cap: number;
+  market_cap_rank: number;
+  price_change_percentage_24h: number;
+  price_change_percentage_7d_in_currency?: number;
+  sparkline_in_7d?: { price: number[] };
+  total_volume: number;
+}
+
+export interface GlobalData {
+  data: {
+    total_market_cap: { usd: number };
+    total_volume: { usd: number };
+    market_cap_percentage: { btc: number; eth: number };
+    market_cap_change_percentage_24h_usd: number;
+  };
+}
+
+// Proxy through backend route (bypasses CORS since it's server-side)
 export async function getMarketCoins(page = 1, perPage = 50): Promise<CoinMarket[]> {
-  const url = `${CG_BASE}/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=${perPage}&page=${page}&sparkline=true&price_change_percentage=7d`;
+  const url = `${API_BASE}/api/coingecko/market-coins?page=${page}&per_page=${perPage}`;
   return fetchWithCache<CoinMarket[]>(url, 60000);
 }
 
@@ -62,44 +87,22 @@ export function pricesToOhlc(prices: [number, number][], volumes?: [number, numb
     .sort((a, b) => (a[0] as number) - (b[0] as number));
 }
 
-export interface CoinMarket {
-  id: string;
-  symbol: string;
-  name: string;
-  image: string;
-  current_price: number;
-  market_cap: number;
-  market_cap_rank: number;
-  price_change_percentage_24h: number;
-  price_change_percentage_7d_in_currency?: number;
-  sparkline_in_7d?: { price: number[] };
-  total_volume: number;
-}
-
-export interface GlobalData {
-  data: {
-    total_market_cap: { usd: number };
-    total_volume: { usd: number };
-    market_cap_percentage: { btc: number; eth: number };
-    market_cap_change_percentage_24h_usd: number;
-  };
-}
-
-// Call CoinGecko directly for OHLC data
+// Proxy through backend OHLC route
 export async function getOhlc(coinId: string, days = 7): Promise<number[][]> {
-  const url = `${CG_BASE}/coins/${encodeURIComponent(coinId)}/market_chart?vs_currency=usd&days=${days}`;
-  const raw = await fetchWithCache<{ prices: [number, number][]; total_volumes?: [number, number][] }>(url, 300000);
-  return pricesToOhlc(raw.prices, raw.total_volumes);
+  const url = `${API_BASE}/api/coingecko/ohlc?coin_id=${encodeURIComponent(coinId)}&days=${days}`;
+  // The backend returns { _route: ..., data: [[ts, open, high, low, close, volume], ...] }
+  const raw = await fetchWithCache<number[][]>(url, 300000);
+  return raw;
 }
 
 export function searchCoins(query: string) {
   return fetchWithCache<{ coins: Array<{ id: string; name: string; symbol: string; thumb: string; market_cap_rank: number }> }>(
-    `${CG_BASE}/search?query=${encodeURIComponent(query)}`, 60000
+    `${API_BASE}/api/coingecko/search?q=${encodeURIComponent(query)}`, 60000
   );
 }
 
 export function getGlobalData() {
-  return fetchWithCache<GlobalData>(`${CG_BASE}/global`, 300000);
+  return fetchWithCache<GlobalData>(`${API_BASE}/api/coingecko/global`, 300000);
 }
 
 export interface ChartPoint {
@@ -107,10 +110,10 @@ export interface ChartPoint {
   value: number;
 }
 
-// Call CoinGecko directly for market chart data
+// Proxy through backend route
 export function getMarketChart(coinId: string, days = 365) {
   return fetchWithCache<{ prices: [number, number][]; market_caps: [number, number][]; total_volumes: [number, number][] }>(
-    `${CG_BASE}/coins/${encodeURIComponent(coinId)}/market_chart?vs_currency=usd&days=${days}`,
+    `${API_BASE}/api/coingecko/market-chart?coin_id=${encodeURIComponent(coinId)}&days=${days}`,
     300000
   );
 }
