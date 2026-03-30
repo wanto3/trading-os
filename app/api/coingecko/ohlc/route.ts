@@ -11,7 +11,13 @@ export async function GET(request: Request) {
     const resp = await fetch(url, { signal: AbortSignal.timeout(10000) });
     if (!resp.ok) { return NextResponse.json({ error: 'CoinGecko API error', status: resp.status }, { status: 502 }); }
     const data = (await resp.json()) as Array<[number, number, number, number, number]>;
-    return NextResponse.json({ data });
+    return NextResponse.json({ data }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      },
+    });
   } catch (err) {
     console.error('CoinGecko OHLC error:', err);
     return NextResponse.json({ error: 'Failed to fetch OHLC data' }, { status: 500 });
