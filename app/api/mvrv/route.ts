@@ -74,6 +74,20 @@ export async function GET() {
       marketCap = priceData.bitcoin?.usd_market_cap ?? 0;
     }
 
+    // If CoinGecko rate-limited, extract price and market cap from market_chart response
+    if (price === 0 && histRes.ok) {
+      const histData = (await histRes.json()) as { prices: [number, number][]; market_caps?: [number, number][] };
+      if (histData.prices && histData.prices.length > 0) {
+        price = histData.prices[histData.prices.length - 1][1];
+        if (histData.market_caps && histData.market_caps.length > 0) {
+          marketCap = histData.market_caps[histData.market_caps.length - 1][1];
+        } else if (marketCap === 0 && price > 0) {
+          // Estimate from price * BTC supply
+          marketCap = price * 20_000_000;
+        }
+      }
+    }
+
     // Try blockchain.info for realized cap — fall back to CoinGecko supply data
     if (bcRes?.ok) {
       const bcData = (await bcRes.json()) as Record<string, number>;
@@ -90,9 +104,10 @@ export async function GET() {
       // Use 60% of market cap as estimated realized cap (historical average)
       realizedCap = marketCap * 0.6;
     }
-    if (realizedCap === 0 && price > 0) {
-      // Use a conservative MVRV of 3.0 as fallback
-      realizedCap = price * 1e7 / 3.0; // Approximate realized cap from price
+    if (realizedCap === 0 && marketCap === 0 && price > 0) {
+      // Estimate market cap from price: BTC supply ≈ 20M
+      marketCap = price * 20_000_000;
+      realizedCap = marketCap * 0.6;
     }
 
     let mvrv = 0;
