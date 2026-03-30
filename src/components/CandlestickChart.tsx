@@ -183,7 +183,7 @@ export function CandlestickChart() {
             </div>
           </div>
         )}
-        <div ref={chartRef} className="w-full h-full" />
+        <div ref={chartRef} className="w-full" style={{ height: '100%', minHeight: '280px', maxHeight: '55vh' }} />
       </div>
     </div>
   );

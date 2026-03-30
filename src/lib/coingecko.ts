@@ -3,27 +3,44 @@ const API_BASE = '';
 
 const cache = new Map<string, { data: unknown; expiry: number }>();
 
-// Generic cache wrapper for any API endpoint
-async function fetchWithCache<T>(url: string, cacheMs = 300000): Promise<T> {
+// Generic cache wrapper for any API endpoint with retry logic
+async function fetchWithCache<T>(url: string, cacheMs = 300000, retries = 2): Promise<T> {
   const now = Date.now();
   const cached = cache.get(url);
   if (cached && cached.expiry > now) return cached.data as T;
 
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`API error: ${res.status}`);
-  const json = await res.json() as Record<string, unknown>;
+  let lastError: Error | null = null;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const res = await fetch(url);
+      if (!res.ok) {
+        if (res.status >= 500 && attempt < retries) {
+          await new Promise(r => setTimeout(r, 500 * Math.pow(2, attempt)));
+          continue;
+        }
+        throw new Error(`API error: ${res.status}`);
+      }
+      const json = await res.json() as Record<string, unknown>;
 
-  // Handle { data: ... } wrapper and check for error responses
-  const data = json.data !== undefined ? json.data : json;
-  if (!data || (Array.isArray(data) && data.length === 0)) {
-    throw new Error('Empty or invalid response');
-  }
-  if ((data as Record<string, unknown>).error) {
-    throw new Error(`API error: ${(data as Record<string, unknown>).error}`);
-  }
+      // Handle { data: ... } wrapper and check for error responses
+      const data = json.data !== undefined ? json.data : json;
+      if (!data || (Array.isArray(data) && data.length === 0)) {
+        throw new Error('Empty or invalid response');
+      }
+      if ((data as Record<string, unknown>).error) {
+        throw new Error(`API error: ${(data as Record<string, unknown>).error}`);
+      }
 
-  cache.set(url, { data, expiry: now + cacheMs });
-  return data as T;
+      cache.set(url, { data, expiry: now + cacheMs });
+      return data as T;
+    } catch (e) {
+      lastError = e instanceof Error ? e : new Error(String(e));
+      if (attempt < retries) {
+        await new Promise(r => setTimeout(r, 500 * Math.pow(2, attempt)));
+      }
+    }
+  }
+  throw lastError || new Error('Fetch failed');
 }
 
 export interface CoinMarket {

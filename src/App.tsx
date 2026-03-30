@@ -117,14 +117,14 @@ function Dashboard() {
         />
 
         <div className="flex-1 flex flex-col overflow-hidden">
-          <div className="flex-[3] min-h-0">
+          <div className="flex-[3] min-h-0 max-h-[55vh]">
             <ChartErrorBoundary>
               <CandlestickChart key={selectedCoinId} />
             </ChartErrorBoundary>
           </div>
 
           {selectedCoin && (
-            <div className="flex-[2] shrink-0 border-t border-border-subtle bg-bg-surface overflow-hidden">
+            <div className="flex-[2] shrink-0 min-h-[200px] border-t border-border-subtle bg-bg-surface overflow-hidden">
               <TabPanel tabs={tabs} />
             </div>
           )}
