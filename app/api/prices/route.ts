@@ -14,7 +14,19 @@ const COINGECKO_IDS: Record<string, string> = {
   THETA: 'theta-token', APE: 'apecoin', FLOW: 'flow', CHZ: 'chiliz',
   ENJ: 'enjincoin', ZIL: 'zilliqa', ENS: 'ethereum-name-service',
 };
-const cache = new Map<string, { data: unknown; expires: number }>();
+
+function getRouteCache(routeName: string) {
+  if (!globalThis.__routeCaches) {
+    globalThis.__routeCaches = new Map<string, Map<string, { data: unknown; expires: number }>>();
+  }
+  if (!globalThis.__routeCaches.has(routeName)) {
+    globalThis.__routeCaches.set(routeName, new Map());
+  }
+  return globalThis.__routeCaches.get(routeName)!;
+}
+
+const ROUTE_NAME = 'prices';
+const cache = getRouteCache(ROUTE_NAME);
 
 function cacheGet<T>(key: string): T | null {
   const entry = cache.get(key);

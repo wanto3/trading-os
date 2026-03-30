@@ -7,7 +7,18 @@ interface BinanceCandle {
   0: number; 1: string; 2: string; 3: string; 4: string; 5: string; 6: number; 7: string;
 }
 
-const cache = new Map<string, { data: unknown; expires: number }>();
+function getRouteCache(routeName: string) {
+  if (!globalThis.__routeCaches) {
+    globalThis.__routeCaches = new Map<string, Map<string, { data: unknown; expires: number }>>();
+  }
+  if (!globalThis.__routeCaches.has(routeName)) {
+    globalThis.__routeCaches.set(routeName, new Map());
+  }
+  return globalThis.__routeCaches.get(routeName)!;
+}
+
+const ROUTE_NAME = 'candles';
+const cache = getRouteCache(ROUTE_NAME);
 
 function cacheGet<T>(key: string): T | null {
   const entry = cache.get(key);
