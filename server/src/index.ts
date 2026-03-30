@@ -9,6 +9,8 @@ import assetsRoutes from './routes/assets.js';
 import pricesRoutes from './routes/prices.js';
 import candlesRoutes from './routes/candles.js';
 import indicatorsRoutes from './routes/indicators.js';
+import coingeckoRoutes from './routes/coingecko.js';
+import metricsRoutes from './routes/metrics.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = path.resolve(__dirname, '../data');
@@ -30,6 +32,8 @@ app.use('/api', assetsRoutes);
 app.use('/api', pricesRoutes);
 app.use('/api', candlesRoutes);
 app.use('/api', indicatorsRoutes);
+app.use('/api', coingeckoRoutes);
+app.use('/api', metricsRoutes);
 
 // Error handler
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {

@@ -1,16 +1,37 @@
 import { useEffect, useRef, useState } from 'react';
 import { createChart } from 'lightweight-charts';
 import type { IChartApi, ISeriesApi, CandlestickData, HistogramData, Time } from 'lightweight-charts';
-import { getOhlc } from '../lib/coingecko';
 import { useCoin } from '../context/CoinContext';
 
 const TIMEFRAMES = [
-  { label: '1H', days: 1 },
-  { label: '4H', days: 1 },
-  { label: '1D', days: 7 },
-  { label: '1W', days: 30 },
-  { label: '1M', days: 90 },
+  { label: '1H', interval: '1h', limit: 24 },
+  { label: '4H', interval: '4h', limit: 42 },
+  { label: '1D', interval: '1d', limit: 30 },
+  { label: '1W', interval: '1w', limit: 52 },
+  { label: '1M', interval: '1M', limit: 90 },
 ];
+
+// Maps CoinGecko coin IDs to Binance trading pair suffixes
+const COINGECKO_TO_SYMBOL: Record<string, string> = {
+  bitcoin: 'BTCUSDT',
+  ethereum: 'ETHUSDT',
+  binancecoin: 'BNBUSDT',
+  solana: 'SOLUSDT',
+  ripple: 'XRPUSDT',
+  cardano: 'ADAUSDT',
+  dogecoin: 'DOGEUSDT',
+  polkadot: 'DOTUSDT',
+  avalanche: 'AVAXUSDT',
+  chainlink: 'LINKUSDT',
+  polygon: 'MATICUSDT',
+  litecoin: 'LTCUSDT',
+  'uniswap': 'UNIUSDT',
+  'matic-network': 'MATICUSDT',
+};
+
+function coingeckoIdToSymbol(id: string): string {
+  return COINGECKO_TO_SYMBOL[id] ?? `${id.toUpperCase().replace(/-/g, '')}USDT`;
+}
 
 export function CandlestickChart() {
   const { selectedCoinId, setSelectedCoinId } = useCoin();
@@ -99,20 +120,24 @@ export function CandlestickChart() {
       setLoading(true);
       setError(null);
       try {
-        const rawData = await getOhlc(selectedCoinId, timeframe.days);
+        const symbol = coingeckoIdToSymbol(selectedCoinId);
+        const res = await fetch(`/api/candles/${encodeURIComponent(symbol)}?interval=${timeframe.interval}&limit=${timeframe.limit}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = await res.json() as { data: Array<{ openTime: number; open: number; high: number; low: number; close: number; volume: number }> };
+        const rawData = json.data;
+
         const candleData: CandlestickData<Time>[] = rawData.map(d => ({
-          // CoinGecko OHLC returns number[][]: [timestamp, open, high, low, close]
-          time: (d[0] / 1000) as Time,
-          open: d[1],
-          high: d[2],
-          low: d[3],
-          close: d[4],
+          // Backend returns openTime (ms) and OHLCV data from Binance
+          time: (d.openTime / 1000) as Time,
+          open: d.open,
+          high: d.high,
+          low: d.low,
+          close: d.close,
         }));
-        // CoinGecko OHLC endpoint does not include volume — use 0 placeholder
         const volumeData: HistogramData<Time>[] = rawData.map(d => ({
-          time: (d[0] / 1000) as Time,
-          value: 0,
-          color: d[4] >= d[1] ? 'rgba(63,185,80,0.3)' : 'rgba(248,81,73,0.3)',
+          time: (d.openTime / 1000) as Time,
+          value: d.volume,
+          color: d.close >= d.open ? 'rgba(63,185,80,0.3)' : 'rgba(248,81,73,0.3)',
         }));
         candleRef.current!.setData(candleData);
         volumeRef.current!.setData(volumeData);

@@ -47,25 +47,25 @@ export interface GlobalData {
 
 export function getMarketCoins(page = 1, perPage = 50) {
   return fetchWithCache<CoinMarket[]>(
-    `/api/market-coins?page=${page}&per_page=${perPage}`, 60000
+    `/api/coingecko/market-coins?page=${page}&per_page=${perPage}`, 60000
   );
 }
 
 export function searchCoins(query: string) {
   return fetchWithCache<{ coins: Array<{ id: string; name: string; symbol: string; thumb: string; market_cap_rank: number }> }>(
-    `/api/search?q=${encodeURIComponent(query)}`, 60000
+    `/api/coingecko/search?q=${encodeURIComponent(query)}`, 60000
   );
 }
 
 export function getOhlc(coinId: string, days = 7) {
   // CoinGecko returns number[][]: [timestamp, open, high, low, close]
   return fetchWithCache<number[][]>(
-    `/api/ohlc?coinId=${encodeURIComponent(coinId)}&days=${days}`, 300000
+    `/api/coingecko/ohlc?coin_id=${encodeURIComponent(coinId)}&days=${days}`, 300000
   );
 }
 
 export function getGlobalData() {
-  return fetchWithCache<GlobalData>(`/api/global`, 300000);
+  return fetchWithCache<GlobalData>(`/api/coingecko/global`, 300000);
 }
 
 export interface ChartPoint {
@@ -75,6 +75,6 @@ export interface ChartPoint {
 
 export function getMarketChart(coinId: string, days = 365) {
   return fetchWithCache<{ prices: [number, number][]; market_caps: [number, number][]; total_volumes: [number, number][] }>(
-    `/api/market-chart?coinId=${encodeURIComponent(coinId)}&days=${days}`, 300000
+    `/api/coingecko/market-chart?coin_id=${encodeURIComponent(coinId)}&days=${days}`, 300000
   );
 }
