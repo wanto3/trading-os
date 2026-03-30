@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { getOhlc, getMarketChart } from '../lib/coingecko';
 import { useCoin } from '../context/CoinContext';
+import { SignalRadar } from './SignalRadar';
 
 function calculateRSI(closes: number[], period = 14): number[] {
   if (closes.length < period + 1) return [];
@@ -132,6 +133,7 @@ export function IndicatorsPanel() {
 
   return (
     <div className="space-y-6">
+      <SignalRadar />
       <div className="bg-bg-primary rounded-lg p-4 border border-border-subtle">
         <div className="flex items-center justify-between mb-2">
           <h3 className="text-text-secondary text-xs font-semibold uppercase tracking-wider">RSI (14)</h3>
