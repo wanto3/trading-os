@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 const CG_BASE = 'https://api.coingecko.com/api/v3';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const resp = await fetch(`${CG_BASE}/global`, { signal: AbortSignal.timeout(10000) });

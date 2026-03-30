@@ -27,6 +27,22 @@
     "app/api/funding-rates/route.ts": {
       "memory": 1024,
       "maxDuration": 10
+    },
+    "app/api/coingecko/ohlc/route.ts": {
+      "memory": 1024,
+      "maxDuration": 10
+    },
+    "app/api/coingecko/market-coins/route.ts": {
+      "memory": 1024,
+      "maxDuration": 10
+    },
+    "app/api/coingecko/global/route.ts": {
+      "memory": 1024,
+      "maxDuration": 10
+    },
+    "app/api/coingecko/search/route.ts": {
+      "memory": 1024,
+      "maxDuration": 10
     }
   }
 }
