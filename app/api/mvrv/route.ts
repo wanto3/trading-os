@@ -57,38 +57,26 @@ function getSignal(mvrv: number, zScore: number): { signal: MvrvResponse['signal
 }
 
 export async function GET() {
+  let price = 0;
+  let marketCap = 0;
+  let realizedCap = 0;
+  let priceData: Record<string, { usd: number; usd_market_cap: number }> = {};
+  let histData: { prices: [number, number][]; market_caps?: [number, number][] } | null = null;
+  let histOk = false;
+
+  // Try price endpoint — may be rate-limited on free tier
   try {
-    const [priceRes, bcRes, histRes] = await Promise.all([
-      fetch(`${CG_BASE}/simple/price?ids=bitcoin&vs_currency=usd&include_market_cap=true&include_24hr_change=true`, { signal: AbortSignal.timeout(8000) }),
-      fetch('https://api.blockchain.info/stats', { signal: AbortSignal.timeout(5000) }).catch(() => null),
-      fetch(`${CG_BASE}/coins/bitcoin/market_chart?vs_currency=usd&days=730&interval=daily`, { signal: AbortSignal.timeout(10000) }),
-    ]);
-
-    let price = 0;
-    let marketCap = 0;
-    let realizedCap = 0;
-
+    const priceRes = await fetch(`${CG_BASE}/simple/price?ids=bitcoin&vs_currency=usd&include_market_cap=true&include_24hr_change=true`, { signal: AbortSignal.timeout(8000) });
     if (priceRes.ok) {
-      const priceData = (await priceRes.json()) as Record<string, { usd: number; usd_market_cap: number }>;
+      priceData = await priceRes.json() as typeof priceData;
       price = priceData.bitcoin?.usd ?? 0;
       marketCap = priceData.bitcoin?.usd_market_cap ?? 0;
     }
+  } catch { /* continue */ }
 
-    // If CoinGecko rate-limited, extract price and market cap from market_chart response
-    if (price === 0 && histRes.ok) {
-      const histData = (await histRes.json()) as { prices: [number, number][]; market_caps?: [number, number][] };
-      if (histData.prices && histData.prices.length > 0) {
-        price = histData.prices[histData.prices.length - 1][1];
-        if (histData.market_caps && histData.market_caps.length > 0) {
-          marketCap = histData.market_caps[histData.market_caps.length - 1][1];
-        } else if (marketCap === 0 && price > 0) {
-          // Estimate from price * BTC supply
-          marketCap = price * 20_000_000;
-        }
-      }
-    }
-
-    // Try blockchain.info for realized cap — fall back to CoinGecko supply data
+  // Try blockchain.info for realized cap
+  try {
+    const bcRes = await fetch('https://api.blockchain.info/stats', { signal: AbortSignal.timeout(5000) });
     if (bcRes?.ok) {
       const bcData = (await bcRes.json()) as Record<string, number>;
       const rc = bcData.realized_cap_usd;
@@ -98,74 +86,90 @@ export async function GET() {
         marketCap = mc;
       }
     }
+  } catch { /* continue */ }
 
-    // Fallback: estimate realized cap from CoinGecko if not available
-    if (realizedCap === 0 && marketCap > 0 && price > 0) {
-      // Use 60% of market cap as estimated realized cap (historical average)
-      realizedCap = marketCap * 0.6;
-    }
-    if (realizedCap === 0 && marketCap === 0 && price > 0) {
-      // Estimate market cap from price: BTC supply ≈ 20M
-      marketCap = price * 20_000_000;
-      realizedCap = marketCap * 0.6;
-    }
-
-    let mvrv = 0;
-    let zScore = 1.0;
-    if (realizedCap > 0) {
-      mvrv = marketCap / realizedCap;
-    } else if (marketCap > 0) {
-      mvrv = 3.5;
-      realizedCap = marketCap / mvrv;
-    }
-
-    let ratioChange7d = 0;
-    if (histRes.ok) {
-      const histData = (await histRes.json()) as { prices: [number, number][] };
-      if (histData.prices && histData.prices.length >= 8) {
-        const prices = histData.prices.map(([, p]) => p);
-        const ma7: number[] = [];
-        for (let i = 7; i < prices.length; i++) {
-          ma7.push(prices.slice(i - 7, i).reduce((a, b) => a + b, 0) / 7);
-        }
-        if (ma7.length >= 2) {
-          ratioChange7d = (prices[prices.length - 1] / ma7[ma7.length - 1]) - (prices[7] / ma7[0]);
-        }
-        if (histData.prices.length > 365) {
-          const window = 365;
-          const prices2 = histData.prices.map(([, p]) => p);
-          const realizedPrices: number[] = [];
-          for (let i = window; i < prices2.length; i++) {
-            realizedPrices.push(prices2.slice(i - window, i).reduce((a, b) => a + b, 0) / window);
-          }
-          const mvrvHistory = prices2.slice(window).map((p, i) => p / realizedPrices[i]);
-          zScore = calcZScore(mvrvHistory);
-        }
-      }
-    }
-
-    const zone = getZone(mvrv || 3.5);
-    const signalData = getSignal(mvrv || 3.5, zScore);
-
-    const response: MvrvResponse = {
-      ratio: mvrv || 3.5,
-      ratioChange7d,
-      zScore,
-      zone,
-      zoneLabel: getZoneLabel(zone),
-      signal: signalData.signal,
-      signalLabel: signalData.label,
-      signalReason: signalData.reason,
-      btcPrice: price,
-      marketCap: marketCap || 0,
-      realizedCap: realizedCap || 0,
-      timestamp: Date.now(),
-      history: [],
-    };
-
-    return NextResponse.json({ data: response });
-  } catch (err) {
-    console.error('MVRV error:', err);
-    return NextResponse.json({ error: 'Failed to fetch MVRV data' }, { status: 500 });
+  // Try market_chart (max 365 days on free tier)
+  type ChartData = { prices: [number, number][]; market_caps?: [number, number][] };
+  async function fetchChart(days: number): Promise<ChartData | null> {
+    try {
+      const res = await fetch(`${CG_BASE}/coins/bitcoin/market_chart?vs_currency=usd&days=${days}&interval=daily`, { signal: AbortSignal.timeout(10000) });
+      if (!res.ok) return null;
+      return await res.json() as ChartData;
+    } catch { return null; }
   }
+  const fetched: ChartData | null = await fetchChart(365) ?? await fetchChart(30);
+  if (fetched) {
+    histData = fetched;
+    histOk = true;
+  }
+
+  // Fallback: estimate realized cap from market cap (60% avg)
+  if (realizedCap === 0 && marketCap > 0 && price > 0) {
+    realizedCap = marketCap * 0.6;
+  }
+  if (realizedCap === 0 && marketCap === 0 && price > 0) {
+    marketCap = price * 20_000_000;
+    realizedCap = marketCap * 0.6;
+  }
+
+  // Calculate MVRV
+  let mvrv = 0;
+  if (realizedCap > 0 && marketCap > 0) {
+    mvrv = marketCap / realizedCap;
+  } else if (marketCap > 0) {
+    mvrv = 3.5;
+    realizedCap = marketCap / mvrv;
+  } else {
+    mvrv = 3.5;
+    realizedCap = price * 20_000_000 * 0.6;
+    marketCap = price * 20_000_000;
+  }
+
+  // Calculate 7d change and z-score from history
+  let ratioChange7d = 0;
+  let zScore = 1.0;
+  if (histOk && histData?.prices && histData.prices.length >= 8) {
+    const prices = histData.prices.map(([, p]) => p);
+
+    // 7d change
+    const ma7: number[] = [];
+    for (let i = 7; i < prices.length; i++) {
+      ma7.push(prices.slice(i - 7, i).reduce((a, b) => a + b, 0) / 7);
+    }
+    if (ma7.length >= 2) {
+      ratioChange7d = (prices[prices.length - 1] / ma7[ma7.length - 1]) - (prices[7] / ma7[0]);
+    }
+
+    // Z-score (needs at least 365 days of data)
+    if (prices.length >= 365) {
+      const window = 365;
+      const realizedPrices: number[] = [];
+      for (let i = window; i < prices.length; i++) {
+        realizedPrices.push(prices.slice(i - window, i).reduce((a, b) => a + b, 0) / window);
+      }
+      const mvrvHistory = prices.slice(window).map((p, i) => p / realizedPrices[i]);
+      zScore = calcZScore(mvrvHistory);
+    }
+  }
+
+  const zone = getZone(mvrv);
+  const signalData = getSignal(mvrv, zScore);
+
+  const response: MvrvResponse = {
+    ratio: mvrv,
+    ratioChange7d,
+    zScore,
+    zone,
+    zoneLabel: getZoneLabel(zone),
+    signal: signalData.signal,
+    signalLabel: signalData.label,
+    signalReason: signalData.reason,
+    btcPrice: price,
+    marketCap,
+    realizedCap,
+    timestamp: Date.now(),
+    history: [],
+  };
+
+  return NextResponse.json({ data: response });
 }
