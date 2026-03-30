@@ -6,9 +6,6 @@ vi.stubGlobal('fetch', mockFetch);
 import { renderHook, waitFor } from '@testing-library/react';
 import { useWhaleMetrics } from './useWhaleMetrics';
 
-// We need to mock React for the hook
-import React from 'react';
-
 const MOCK_WHALE_RESPONSE = {
   data: {
     btc: {

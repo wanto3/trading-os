@@ -81,11 +81,13 @@ export function Watchlist({ coins, favorites, onToggleFavorite }: WatchlistProps
                   </span>
                 </div>
               </div>
-              {coin.sparkline_in_7d?.price && (
-                <div className="mt-1 flex justify-end">
+              <div className="mt-1 flex justify-end">
+                {coin.sparkline_in_7d?.price && coin.sparkline_in_7d.price.length >= 2 ? (
                   <MiniSparkline data={coin.sparkline_in_7d.price} positive={positive} />
-                </div>
-              )}
+                ) : (
+                  <span className="font-mono text-xs text-text-secondary w-[60px] text-right">—</span>
+                )}
+              </div>
             </div>
           );
         })}

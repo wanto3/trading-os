@@ -51,7 +51,8 @@ export function useCryptoNews(refreshIntervalMs = 300000) {
 
   const fetchNews = useCallback(async () => {
     try {
-      const res = await fetch('https://api.coingecko.com/api/v3/news?page=1');
+      const API_BASE = import.meta.env.VITE_API_URL || '';
+      const res = await fetch(`${API_BASE}/api/news`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json: CoinGeckoNewsResponse = await res.json();
 

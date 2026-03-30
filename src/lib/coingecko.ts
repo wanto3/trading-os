@@ -1,4 +1,3 @@
-const BASE = 'https://api.coingecko.com/api/v3';
 const cache = new Map<string, { data: unknown; expiry: number }>();
 
 async function fetchWithCache<T>(url: string, cacheMs = 300000): Promise<T> {
@@ -6,11 +5,13 @@ async function fetchWithCache<T>(url: string, cacheMs = 300000): Promise<T> {
   const cached = cache.get(url);
   if (cached && cached.expiry > now) return cached.data as T;
 
-  const res = await fetch(`${BASE}${url}`);
-  if (!res.ok) throw new Error(`CoinGecko API error: ${res.status}`);
-  const data = await res.json() as T;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`API error: ${res.status}`);
+  // Proxy responses wrap data in { data: ... }; direct responses return data directly
+  const json = await res.json() as Record<string, unknown>;
+  const data = json.data !== undefined ? json.data : json;
   cache.set(url, { data, expiry: now + cacheMs });
-  return data;
+  return data as T;
 }
 
 export interface CoinMarket {
@@ -44,27 +45,27 @@ export interface GlobalData {
   };
 }
 
-export function getMarketCoins(page = 1, perPage = 20) {
+export function getMarketCoins(page = 1, perPage = 50) {
   return fetchWithCache<CoinMarket[]>(
-    `/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=${perPage}&page=${page}&sparkline=true&price_change_percentage=7d`
+    `/api/market-coins?page=${page}&per_page=${perPage}`, 60000
   );
 }
 
 export function searchCoins(query: string) {
   return fetchWithCache<{ coins: Array<{ id: string; name: string; symbol: string; thumb: string; market_cap_rank: number }> }>(
-    `/search?query=${encodeURIComponent(query)}`, 60000
+    `/api/search?q=${encodeURIComponent(query)}`, 60000
   );
 }
 
 export function getOhlc(coinId: string, days = 7) {
   // CoinGecko returns number[][]: [timestamp, open, high, low, close]
   return fetchWithCache<number[][]>(
-    `/coins/${coinId}/ohlc?vs_currency=usd&days=${days}`, 300000
+    `/api/ohlc?coinId=${encodeURIComponent(coinId)}&days=${days}`, 300000
   );
 }
 
 export function getGlobalData() {
-  return fetchWithCache<GlobalData>(`/global`, 300000);
+  return fetchWithCache<GlobalData>(`/api/global`, 300000);
 }
 
 export interface ChartPoint {
@@ -74,6 +75,6 @@ export interface ChartPoint {
 
 export function getMarketChart(coinId: string, days = 365) {
   return fetchWithCache<{ prices: [number, number][]; market_caps: [number, number][]; total_volumes: [number, number][] }>(
-    `/coins/${coinId}/market_chart?vs_currency=usd&days=${days}`, 300000
+    `/api/market-chart?coinId=${encodeURIComponent(coinId)}&days=${days}`, 300000
   );
 }
