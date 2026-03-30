@@ -23,22 +23,12 @@ const mockRes = {
   end: vi.fn(),
 } as unknown as { json: ReturnType<typeof vi.fn>; setHeader: ReturnType<typeof vi.fn>; status: ReturnType<typeof vi.fn>; end: ReturnType<typeof vi.fn> };
 
-function makeReq(params: Record<string, string | string[] | undefined> = {}): unknown {
-  return {
-    method: 'GET',
-    query: params,
-    // Vercel dynamic routes inject path params into query
-    // e.g. /api/candles/BTCUSDT → query.symbol = 'BTCUSDT'
-    ...(params.symbol === undefined ? {} : {}),
-  };
-}
-
-const defaultQuery = { symbol: 'BTCUSDT' };
-
+// Vercel dynamic routes inject path params into query
+// e.g. /api/candles/BTCUSDT → query.symbol = 'BTCUSDT'
 function makeCandleReq(params: Record<string, string | string[] | undefined> = {}): unknown {
   return {
     method: 'GET',
-    query: { ...defaultQuery, ...params },
+    query: { symbol: 'BTCUSDT', ...params },
   };
 }
 
@@ -81,7 +71,7 @@ describe('GET /api/candles/[symbol] — Binance candle data', () => {
       json: () => Promise.resolve(binanceData),
     });
 
-    await handler(makeReq({ interval: '1h', limit: '24' }) as VercelRequest, mockRes as VercelResponse);
+    await handler(makeCandleReq({ interval: '1h', limit: '24' }) as VercelRequest, mockRes as VercelResponse);
 
     expect(mockFetch).toHaveBeenCalledWith(
       expect.stringContaining('BTCUSDT'),
@@ -106,7 +96,7 @@ describe('GET /api/candles/[symbol] — Binance candle data', () => {
       json: () => Promise.resolve([[now, '100', '110', '95', '105', '50', now + 60000, '5000']]),
     });
 
-    await handler(makeReq({ interval: '1h', limit: '10' }) as VercelRequest, mockRes as VercelResponse);
+    await handler(makeCandleReq({ interval: '1h', limit: '10' }) as VercelRequest, mockRes as VercelResponse);
 
     const response = mockJson.mock.calls[0][0];
     expect(response.data[0].openTime).toBe(now);
@@ -114,7 +104,8 @@ describe('GET /api/candles/[symbol] — Binance candle data', () => {
   });
 
   it('returns 400 when symbol is missing', async () => {
-    await handler(makeReq() as VercelRequest, mockRes as VercelResponse);
+    // Pass empty query (no symbol) to simulate missing path param
+    await handler({ method: 'GET', query: {} } as unknown as VercelRequest, mockRes as VercelResponse);
 
     expect(mockRes.status).toHaveBeenCalledWith(400);
     expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({
@@ -125,7 +116,7 @@ describe('GET /api/candles/[symbol] — Binance candle data', () => {
   it('uses default interval=1d and limit=100', async () => {
     mockFetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve([]) });
 
-    await handler(makeReq() as VercelRequest, mockRes as VercelResponse);
+    await handler(makeCandleReq() as VercelRequest, mockRes as VercelResponse);
 
     const calledUrl = mockFetch.mock.calls[0][0];
     expect(calledUrl).toContain('interval=1d');
@@ -135,7 +126,7 @@ describe('GET /api/candles/[symbol] — Binance candle data', () => {
   it('clamps limit to max 500', async () => {
     mockFetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve([]) });
 
-    await handler(makeReq({ limit: '9999' }) as VercelRequest, mockRes as VercelResponse);
+    await handler(makeCandleReq({ limit: '9999' }) as VercelRequest, mockRes as VercelResponse);
 
     const calledUrl = mockFetch.mock.calls[0][0];
     expect(calledUrl).toContain('limit=500');
@@ -144,7 +135,7 @@ describe('GET /api/candles/[symbol] — Binance candle data', () => {
   it('sets CORS and cache headers', async () => {
     mockFetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve([]) });
 
-    await handler(makeReq({ interval: '4h', limit: '50' }) as VercelRequest, mockRes as VercelResponse);
+    await handler(makeCandleReq({ interval: '4h', limit: '50' }) as VercelRequest, mockRes as VercelResponse);
 
     expect(mockSetHeader).toHaveBeenCalledWith('Access-Control-Allow-Origin', '*');
     expect(mockSetHeader).toHaveBeenCalledWith('Cache-Control', expect.stringContaining('s-maxage'));
@@ -153,7 +144,7 @@ describe('GET /api/candles/[symbol] — Binance candle data', () => {
   it('returns 502 on upstream API error', async () => {
     mockFetch.mockResolvedValueOnce({ ok: false, status: 429 });
 
-    await handler(makeReq({ interval: '1d', limit: '100' }) as VercelRequest, mockRes as VercelResponse);
+    await handler(makeCandleReq({ interval: '1d', limit: '100' }) as VercelRequest, mockRes as VercelResponse);
 
     expect(mockRes.status).toHaveBeenCalledWith(502);
   });
@@ -161,7 +152,7 @@ describe('GET /api/candles/[symbol] — Binance candle data', () => {
   it('returns 500 on network failure', async () => {
     mockFetch.mockRejectedValueOnce(new Error('DNS failure'));
 
-    await handler(makeReq({ interval: '1d', limit: '100' }) as VercelRequest, mockRes as VercelResponse);
+    await handler(makeCandleReq({ interval: '1d', limit: '100' }) as VercelRequest, mockRes as VercelResponse);
 
     expect(mockRes.status).toHaveBeenCalledWith(500);
   });
