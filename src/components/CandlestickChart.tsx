@@ -2,36 +2,14 @@ import { useEffect, useRef, useState } from 'react';
 import { createChart } from 'lightweight-charts';
 import type { IChartApi, ISeriesApi, CandlestickData, HistogramData, Time } from 'lightweight-charts';
 import { useCoin } from '../context/CoinContext';
+import { getOhlc } from '../lib/coingecko';
 
 const TIMEFRAMES = [
-  { label: '1H', interval: '1h', limit: 24 },
-  { label: '4H', interval: '4h', limit: 42 },
-  { label: '1D', interval: '1d', limit: 30 },
-  { label: '1W', interval: '1w', limit: 52 },
-  { label: '1M', interval: '1M', limit: 90 },
+  { label: '1D', days: 30 },
+  { label: '7D', days: 90 },
+  { label: '30D', days: 180 },
+  { label: '90D', days: 365 },
 ];
-
-// Maps CoinGecko coin IDs to Binance trading pair suffixes
-const COINGECKO_TO_SYMBOL: Record<string, string> = {
-  bitcoin: 'BTCUSDT',
-  ethereum: 'ETHUSDT',
-  binancecoin: 'BNBUSDT',
-  solana: 'SOLUSDT',
-  ripple: 'XRPUSDT',
-  cardano: 'ADAUSDT',
-  dogecoin: 'DOGEUSDT',
-  polkadot: 'DOTUSDT',
-  avalanche: 'AVAXUSDT',
-  chainlink: 'LINKUSDT',
-  polygon: 'MATICUSDT',
-  litecoin: 'LTCUSDT',
-  'uniswap': 'UNIUSDT',
-  'matic-network': 'MATICUSDT',
-};
-
-function coingeckoIdToSymbol(id: string): string {
-  return COINGECKO_TO_SYMBOL[id] ?? `${id.toUpperCase().replace(/-/g, '')}USDT`;
-}
 
 export function CandlestickChart() {
   const { selectedCoinId, setSelectedCoinId } = useCoin();
@@ -39,7 +17,7 @@ export function CandlestickChart() {
   const chartApiRef = useRef<IChartApi | null>(null);
   const candleRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
   const volumeRef = useRef<ISeriesApi<'Histogram'> | null>(null);
-  const [timeframe, setTimeframe] = useState(TIMEFRAMES[2]);
+  const [timeframe, setTimeframe] = useState(TIMEFRAMES[0]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -120,28 +98,34 @@ export function CandlestickChart() {
       setLoading(true);
       setError(null);
       try {
-        const symbol = coingeckoIdToSymbol(selectedCoinId);
-        const res = await fetch(`/api/candles/${encodeURIComponent(symbol)}?interval=${timeframe.interval}&limit=${timeframe.limit}`);
-        const json = await res.json() as { data?: Array<{ openTime: number; open: number; high: number; low: number; close: number; volume: number }>; error?: string };
-        if (!res.ok || !json.data) {
-          const msg = json.error ?? `HTTP ${res.status}`;
-          throw new Error(msg);
-        }
-        const rawData = json.data;
+        const ohlcData = await getOhlc(selectedCoinId, timeframe.days);
 
-        const candleData: CandlestickData<Time>[] = rawData.map(d => ({
-          // Backend returns openTime (ms) and OHLCV data from Binance
-          time: (d.openTime / 1000) as Time,
-          open: d.open,
-          high: d.high,
-          low: d.low,
-          close: d.close,
+        if (!ohlcData || ohlcData.length === 0) {
+          throw new Error('No data available');
+        }
+
+        // CoinGecko returns [timestamp_ms, open, high, low, close][] per candle
+        const candleData: CandlestickData<Time>[] = ohlcData.map(d => ({
+          time: Math.floor(d[0] / 1000) as Time,
+          open: d[1],
+          high: d[2],
+          low: d[3],
+          close: d[4],
         }));
-        const volumeData: HistogramData<Time>[] = rawData.map(d => ({
-          time: (d.openTime / 1000) as Time,
-          value: d.volume,
-          color: d.close >= d.open ? 'rgba(63,185,80,0.3)' : 'rgba(248,81,73,0.3)',
-        }));
+
+        // Calculate volume from price changes (approximate)
+        const volumeData: HistogramData<Time>[] = ohlcData.map((d, i) => {
+          const open = d[1];
+          const close = d[4];
+          const nextOpen = ohlcData[i + 1]?.[1] ?? close;
+          const volatility = Math.abs(close - open) * 1e8;
+          return {
+            time: Math.floor(d[0] / 1000) as Time,
+            value: Math.max(volatility, 1e6),
+            color: close >= open ? 'rgba(63,185,80,0.3)' : 'rgba(248,81,73,0.3)',
+          };
+        });
+
         candleRef.current!.setData(candleData);
         volumeRef.current!.setData(volumeData);
         chartApiRef.current?.timeScale().fitContent();
