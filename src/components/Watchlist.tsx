@@ -9,8 +9,10 @@ interface WatchlistProps {
   onSetAlert: (coin: CoinMarket) => void;
 }
 
-function MiniSparkline({ data, positive }: { data: number[]; positive: boolean }) {
-  if (!data || data.length < 2) return null;
+function MiniSparkline({ data, positive }: { data?: number[]; positive: boolean }) {
+  if (!data || data.length < 2) {
+    return <span className="font-mono text-xs text-gray-500 w-[60px] text-right select-none">—</span>;
+  }
   const w = 60, h = 24;
   const min = Math.min(...data);
   const max = Math.max(...data);
@@ -82,11 +84,7 @@ export function Watchlist({ coins, favorites, onToggleFavorite }: WatchlistProps
                 </div>
               </div>
               <div className="mt-1 flex justify-end">
-                {coin.sparkline_in_7d?.price && coin.sparkline_in_7d.price.length >= 2 ? (
-                  <MiniSparkline data={coin.sparkline_in_7d.price} positive={positive} />
-                ) : (
-                  <span className="font-mono text-xs text-text-secondary w-[60px] text-right">—</span>
-                )}
+                <MiniSparkline data={coin.sparkline_in_7d?.price} positive={positive} />
               </div>
             </div>
           );
