@@ -7,6 +7,8 @@ import AIBriefingPanel from "@/components/AIBriefingPanel";
 import QuickSignals from "@/components/QuickSignals";
 import SettingsModal from "@/components/SettingsModal";
 import OpportunitiesPanel from "@/components/OpportunitiesPanel";
+import SignalCardsPanel from "@/components/SignalCardsPanel";
+import FearBanner from "@/components/FearBanner";
 import { generateBriefing } from "@/lib/briefing";
 import type { CryptoIndicators, PolymarketMarket, AIBriefing } from "@/lib/types";
 
@@ -152,10 +154,16 @@ export default function Dashboard() {
       )}
 
       <main className="p-4 space-y-4 max-w-[1800px] mx-auto">
+        {/* Fear Banner — global market sentiment */}
+        <FearBanner />
+
         <div className="text-xs text-text-muted font-mono">
           Last updated: {formatLastUpdated(lastUpdated)}{" "}
           {loading && <span className="text-warning">(refreshing...)</span>}
         </div>
+
+        {/* Alpha Signals from data engineer */}
+        <SignalCardsPanel />
 
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
           {/* LEFT: Opportunities + All Markets */}

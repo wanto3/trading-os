@@ -176,6 +176,120 @@ export interface AIBriefing {
 }
 
 // ============================================================
+// Signal Cards
+// ============================================================
+
+export type SignalCardLevel = "bullish" | "bearish" | "neutral" | "watch";
+
+export interface SignalCard {
+  id: string;
+  name: string;
+  emoji: string;
+  value: string;
+  subValue?: string;
+  label: string;
+  plainEnglish: string;
+  action: string;
+  level: SignalCardLevel;
+  color: string;
+  bgColor: string;
+  borderColor: string;
+}
+
+export interface MvrvData {
+  ratio: number;
+  ratioChange7d: number;
+  zScore: number;
+  zone: string;
+  zoneLabel: string;
+  signal: "buy" | "sell" | "hold";
+  signalLabel: string;
+  signalReason: string;
+  btcPrice: number;
+  marketCap: number;
+  realizedCap: number;
+  timestamp: number;
+}
+
+export interface PiCycleData {
+  piCycleTopTriggered: boolean;
+  piCycleTopCrossPrice: number | null;
+  piCycleTopEstTriggerPrice: number | null;
+  ma111: number;
+  ma111_2: number;
+  btcPrice: number;
+  compositeScore: number;
+  compositeSignal: "buy" | "sell" | "hold";
+  compositeSignalLabel: string;
+  compositeSignalReason: string;
+  components: { name: string; value: number; label: string }[];
+  cyclePhase: string;
+  cyclePhaseLabel: string;
+  timestamp: number;
+}
+
+export interface EtfFlowsData {
+  btc: { totalNetFlow7d: number; consecutiveInflowDays: number; avgVolume7d: number; latestPriceChange: number };
+  eth: { totalNetFlow7d: number; consecutiveInflowDays: number; avgVolume7d: number; latestPriceChange: number };
+  signal: "bullish" | "bearish" | "neutral";
+  signalLabel: string;
+  signalReason: string;
+  btcPriceChange24h: number;
+  timestamp: number;
+}
+
+export interface FdvToken {
+  id: string;
+  symbol: string;
+  name: string;
+  price: number;
+  marketCap: number;
+  fdv: number;
+  circulatingMarketCap: number;
+  ratio: number;
+  hiddenSellPressure: number;
+  priceChange24h: number;
+  riskLevel: string;
+  rank: number;
+}
+
+export interface FdvRatioData {
+  tokens: FdvToken[];
+  signal: "buy" | "sell" | "hold";
+  signalReason: string;
+  highRiskCount: number;
+  timestamp: number;
+}
+
+export interface TokenUnlock {
+  id: string;
+  symbol: string;
+  name: string;
+  unlockDate: string;
+  amount: number;
+  value: number;
+  daysUntil: number;
+}
+
+export interface TokenUnlocksData {
+  unlocks: TokenUnlock[];
+  totalUpcomingValue: number;
+  shockIndex: string;
+  signal: "buy" | "sell" | "hold";
+  signalLabel: string;
+  signalReason: string;
+  timestamp: number;
+}
+
+export interface FearBannerData {
+  value: number;
+  classification: string;
+  action: string;
+  signal: "buy" | "sell" | "hold";
+  signalReason: string;
+}
+
+// ============================================================
 // Dashboard State
 // ============================================================
 
