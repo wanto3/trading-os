@@ -98,7 +98,7 @@ function countConsecutive(flows: Array<{ direction: string }>): number {
 }
 
 export async function GET() {
-  const cacheKey = 'btc:etf-flows';
+  const cacheKey = 'api:etf-flows';
   const cached = cacheGet<Record<string, unknown>>(cacheKey);
   if (cached) {
     return NextResponse.json({ data: cached, _fromCache: true });

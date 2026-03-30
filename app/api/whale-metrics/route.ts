@@ -182,7 +182,7 @@ async function fetchBtcPrice() {
 }
 
 export async function GET() {
-  const cacheKey = 'whale:metrics';
+  const cacheKey = 'api:whale-metrics';
   const cached = cacheGet<unknown>(cacheKey);
   if (cached) {
     return NextResponse.json({ data: cached, _fromCache: true });

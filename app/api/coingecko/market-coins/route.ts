@@ -7,7 +7,7 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const page = Math.min(Math.max(parseInt(searchParams.get('page') || '1'), 1), 5);
   const perPage = Math.min(Math.max(parseInt(searchParams.get('per_page') || '50'), 1), 50);
-  const cacheKey = `cg:markets:${page}:${perPage}`;
+  const cacheKey = `api:cg:markets:${page}:${perPage}`;
   const cached = cacheGet<unknown[]>(cacheKey);
   if (cached) { return NextResponse.json({ data: cached, _fromCache: true }); }
   try {

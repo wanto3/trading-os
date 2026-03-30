@@ -27,7 +27,7 @@ function cacheSet(key: string, data: unknown, ttlSeconds: number) {
 }
 
 export async function GET() {
-  const cacheKey = 'cg:prices';
+  const cacheKey = 'api:prices:all';
   const cached = cacheGet<unknown[]>(cacheKey);
   if (cached) {
     return NextResponse.json({ data: cached, _fromCache: true });

@@ -7,7 +7,7 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const query = searchParams.get('q');
   if (!query) { return NextResponse.json({ error: 'q is required' }, { status: 400 }); }
-  const cacheKey = `cg:search:${query}`;
+  const cacheKey = `api:cg:search:${query}`;
   const cached = cacheGet<unknown>(cacheKey);
   if (cached) { return NextResponse.json({ data: cached, _fromCache: true }); }
   try {

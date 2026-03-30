@@ -167,7 +167,7 @@ async function fetchDydx(): Promise<ExchangeFundingRate | null> {
 }
 
 export async function GET() {
-  const cacheKey = 'funding-rates';
+  const cacheKey = 'api:funding-rates';
   const cached = cacheGet<FundingRatesResponse>(cacheKey);
   if (cached) {
     return NextResponse.json({ data: cached.data, averageApr: cached.averageApr, _fromCache: true, timestamp: cached.timestamp });

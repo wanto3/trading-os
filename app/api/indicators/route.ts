@@ -73,7 +73,7 @@ export async function GET(request: Request) {
   const coinId = searchParams.get('coin_id') || 'bitcoin';
   const days = Math.min(Math.max(parseInt(searchParams.get('days') || '30'), 7), 365);
 
-  const cacheKey = `indicators:${coinId}:${days}`;
+  const cacheKey = `api:indicators:${coinId}:${days}`;
   const cached = cacheGet<unknown>(cacheKey);
   if (cached) {
     return NextResponse.json({ data: cached, _fromCache: true });

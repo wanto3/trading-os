@@ -48,7 +48,7 @@ function formatDate(dateStr: string): number {
 }
 
 export async function GET() {
-  const cacheKey = 'cg:token-unlocks';
+  const cacheKey = 'api:token-unlocks';
   const cached = cacheGet<unknown>(cacheKey);
   if (cached) {
     return NextResponse.json({ data: cached, _fromCache: true });

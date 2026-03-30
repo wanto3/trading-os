@@ -69,7 +69,7 @@ function getSignal(mvrv: number, zScore: number): { signal: MvrvResponse['signal
 }
 
 export async function GET() {
-  const cacheKey = 'btc:mvrv';
+  const cacheKey = 'api:mvrv';
   const cached = cacheGet<MvrvResponse>(cacheKey);
   if (cached) {
     return NextResponse.json({ data: cached, _fromCache: true });

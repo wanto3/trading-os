@@ -45,7 +45,7 @@ function calcSMA(values: number[], period: number): number | null {
 }
 
 export async function GET() {
-  const cacheKey = 'btc:pi-cycle';
+  const cacheKey = 'api:pi-cycle';
   const cached = cacheGet<PiCycleResponse>(cacheKey);
   if (cached) {
     return NextResponse.json({ data: cached, _fromCache: true });

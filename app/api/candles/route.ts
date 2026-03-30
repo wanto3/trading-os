@@ -44,7 +44,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Invalid interval', supported: SUPPORTED_INTERVALS }, { status: 400 });
   }
 
-  const cacheKey = `candle:${symbol}:${interval}:${limit}`;
+  const cacheKey = `api:candles:${symbol}:${interval}:${limit}`;
   const cached = cacheGet<unknown[]>(cacheKey);
   if (cached) {
     return NextResponse.json({ data: cached, cached: true });

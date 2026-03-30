@@ -21,7 +21,7 @@ function getRiskLevel(ratio: number): 'low' | 'medium' | 'high' | 'extreme' {
 }
 
 export async function GET() {
-  const cacheKey = 'cg:fdv-ratio';
+  const cacheKey = 'api:fdv-ratio';
   const cached = cacheGet<unknown>(cacheKey);
   if (cached) {
     return NextResponse.json({ data: cached, _fromCache: true });

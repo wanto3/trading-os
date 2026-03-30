@@ -8,7 +8,7 @@ export async function GET(request: Request) {
   const coinId = searchParams.get('coin_id');
   const days = Math.min(Math.max(parseInt(searchParams.get('days') || '365'), 1), 730);
   if (!coinId) { return NextResponse.json({ error: 'coin_id is required' }, { status: 400 }); }
-  const cacheKey = `cg:market_chart:${coinId}:${days}`;
+  const cacheKey = `api:cg:market_chart:${coinId}:${days}`;
   const cached = cacheGet<unknown>(cacheKey);
   if (cached) { return NextResponse.json({ data: cached, _fromCache: true }); }
   try {
