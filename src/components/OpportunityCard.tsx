@@ -14,8 +14,9 @@ function formatPrice(price: number | null | undefined): string {
 }
 
 function ConvictionMeter({ score }: { score: number }) {
-  const pct = (score / 10) * 100;
-  const color = score >= 7 ? '#22c55e' : score >= 4 ? '#eab308' : '#ef4444';
+  const safeScore = isNaN(score) ? 0 : score;
+  const pct = (safeScore / 10) * 100;
+  const color = safeScore >= 7 ? '#22c55e' : safeScore >= 4 ? '#eab308' : '#ef4444';
 
   return (
     <div className="flex items-center gap-3">
@@ -25,17 +26,18 @@ function ConvictionMeter({ score }: { score: number }) {
           style={{ width: `${pct}%`, backgroundColor: color, boxShadow: `0 0 8px ${color}40` }}
         />
       </div>
-      <span className="text-lg font-bold tabular-nums" style={{ color }}>{score.toFixed(1)}</span>
+      <span className="text-lg font-bold tabular-nums" style={{ color }}>{safeScore.toFixed(1)}</span>
     </div>
   );
 }
 
 function SignalBadge({ signal }: { signal: Opportunity['signal'] }) {
+  if (!signal) return null;
   const config = {
     buy: { label: 'Buy', class: 'signal-buy', icon: TrendingUp },
     sell: { label: 'Sell', class: 'signal-sell', icon: TrendingDown },
     hold: { label: 'Hold', class: 'signal-hold', icon: Minus },
-  }[signal];
+  }[signal] ?? { label: 'Hold', class: 'signal-hold', icon: Minus };
 
   const Icon = config.icon;
 
@@ -61,7 +63,7 @@ export function OpportunityCard({ opportunity, index }: Props) {
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-dark-surface border border-dark-border flex items-center justify-center">
-            <span className="text-sm font-bold text-gray-300">{opportunity.symbol.slice(0, 2)}</span>
+            <span className="text-sm font-bold text-gray-300">{(opportunity.symbol || '').slice(0, 2)}</span>
           </div>
           <div>
             <h3 className="font-semibold text-white text-base leading-tight">{opportunity.asset}</h3>
