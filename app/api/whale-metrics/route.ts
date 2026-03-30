@@ -1,28 +1,5 @@
 import { NextResponse } from 'next/server';
 
-function getRouteCache(routeName: string) {
-  if (!globalThis.__routeCaches) {
-    globalThis.__routeCaches = new Map<string, Map<string, { data: unknown; expires: number }>>();
-  }
-  if (!globalThis.__routeCaches.has(routeName)) {
-    globalThis.__routeCaches.set(routeName, new Map());
-  }
-  return globalThis.__routeCaches.get(routeName)!;
-}
-
-const ROUTE_NAME = 'whale-metrics';
-const cache = getRouteCache(ROUTE_NAME);
-
-function cacheGet<T>(key: string): T | null {
-  const entry = cache.get(key);
-  if (!entry) return null;
-  if (Date.now() > entry.expires) { cache.delete(key); return null; }
-  return entry.data as T;
-}
-function cacheSet(key: string, data: unknown, ttlSeconds: number) {
-  cache.set(key, { data, expires: Date.now() + ttlSeconds * 1000 });
-}
-
 function getSupplyDistribution(longTermHolderPct: number, exchangePct: number) {
   if (longTermHolderPct > 93 && exchangePct < 5) return 'accumulation';
   if (exchangePct > 7) return 'distribution';
@@ -193,12 +170,6 @@ async function fetchBtcPrice() {
 }
 
 export async function GET() {
-  const cacheKey = 'api:whale-metrics';
-  const cached = cacheGet<unknown>(cacheKey);
-  if (cached) {
-    return NextResponse.json({ data: cached, _fromCache: true });
-  }
-
   try {
     const [btcData, ethData, btcPrice] = await Promise.all([
       fetchBtcWhaleData(),
@@ -233,7 +204,6 @@ export async function GET() {
       timestamp: Date.now(),
     };
 
-    cacheSet(cacheKey, response, 900);
     return NextResponse.json({ data: response });
   } catch (err) {
     console.error('Whale metrics API error:', err);

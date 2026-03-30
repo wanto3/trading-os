@@ -27,41 +27,12 @@ interface PiCycleResponse {
   timestamp: number;
 }
 
-function getRouteCache(routeName: string) {
-  if (!globalThis.__routeCaches) {
-    globalThis.__routeCaches = new Map<string, Map<string, { data: unknown; expires: number }>>();
-  }
-  if (!globalThis.__routeCaches.has(routeName)) {
-    globalThis.__routeCaches.set(routeName, new Map());
-  }
-  return globalThis.__routeCaches.get(routeName)!;
-}
-
-const ROUTE_NAME = 'pi-cycle';
-const cache = getRouteCache(ROUTE_NAME);
-
-function cacheGet<T>(key: string): T | null {
-  const entry = cache.get(key);
-  if (!entry) return null;
-  if (Date.now() > entry.expires) { cache.delete(key); return null; }
-  return entry.data as T;
-}
-function cacheSet(key: string, data: unknown, ttlSeconds: number) {
-  cache.set(key, { data, expires: Date.now() + ttlSeconds * 1000 });
-}
-
 function calcSMA(values: number[], period: number): number | null {
   if (values.length < period) return null;
   return values.slice(-period).reduce((a, b) => a + b, 0) / period;
 }
 
 export async function GET() {
-  const cacheKey = 'api:pi-cycle';
-  const cached = cacheGet<PiCycleResponse>(cacheKey);
-  if (cached) {
-    return NextResponse.json({ data: cached, _fromCache: true });
-  }
-
   try {
     const [histRes, priceRes] = await Promise.all([
       fetch(`${CG_BASE}/coins/bitcoin/market_chart?vs_currency=usd&days=400&interval=daily`, { signal: AbortSignal.timeout(10000) }),
@@ -187,7 +158,6 @@ export async function GET() {
       timestamp: Date.now(),
     };
 
-    cacheSet(cacheKey, response, 3600);
     return NextResponse.json({ data: response });
   } catch (err) {
     console.error('Pi Cycle error:', err);

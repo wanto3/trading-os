@@ -18,29 +18,6 @@ const ETF_NAMES: Record<string, string> = {
   CETH: 'Cath Ethereum Fund',
 };
 
-function getRouteCache(routeName: string) {
-  if (!globalThis.__routeCaches) {
-    globalThis.__routeCaches = new Map<string, Map<string, { data: unknown; expires: number }>>();
-  }
-  if (!globalThis.__routeCaches.has(routeName)) {
-    globalThis.__routeCaches.set(routeName, new Map());
-  }
-  return globalThis.__routeCaches.get(routeName)!;
-}
-
-const ROUTE_NAME = 'etf-flows';
-const cache = getRouteCache(ROUTE_NAME);
-
-function cacheGet<T>(key: string): T | null {
-  const entry = cache.get(key);
-  if (!entry) return null;
-  if (Date.now() > entry.expires) { cache.delete(key); return null; }
-  return entry.data as T;
-}
-function cacheSet(key: string, data: unknown, ttlSeconds: number) {
-  cache.set(key, { data, expires: Date.now() + ttlSeconds * 1000 });
-}
-
 interface EtfFlowResult {
   ticker: string;
   name: string;
@@ -109,12 +86,6 @@ function countConsecutive(flows: Array<{ direction: string }>): number {
 }
 
 export async function GET() {
-  const cacheKey = 'api:etf-flows';
-  const cached = cacheGet<Record<string, unknown>>(cacheKey);
-  if (cached) {
-    return NextResponse.json({ data: cached, _fromCache: true });
-  }
-
   const [btcResults, ethResults] = await Promise.all([
     Promise.all(BTC_ETFS.map(fetchEtf)),
     Promise.all(ETH_ETFS.map(fetchEtf)),
@@ -166,6 +137,5 @@ export async function GET() {
     btcPriceChange24h,
   };
 
-  cacheSet(cacheKey, response, 1800);
   return NextResponse.json({ data: response });
 }

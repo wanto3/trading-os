@@ -7,29 +7,6 @@ interface BinanceCandle {
   0: number; 1: string; 2: string; 3: string; 4: string; 5: string; 6: number; 7: string;
 }
 
-function getRouteCache(routeName: string) {
-  if (!globalThis.__routeCaches) {
-    globalThis.__routeCaches = new Map<string, Map<string, { data: unknown; expires: number }>>();
-  }
-  if (!globalThis.__routeCaches.has(routeName)) {
-    globalThis.__routeCaches.set(routeName, new Map());
-  }
-  return globalThis.__routeCaches.get(routeName)!;
-}
-
-const ROUTE_NAME = 'candles';
-const cache = getRouteCache(ROUTE_NAME);
-
-function cacheGet<T>(key: string): T | null {
-  const entry = cache.get(key);
-  if (!entry) return null;
-  if (Date.now() > entry.expires) { cache.delete(key); return null; }
-  return entry.data as T;
-}
-function cacheSet(key: string, data: unknown, ttlSeconds: number) {
-  cache.set(key, { data, expires: Date.now() + ttlSeconds * 1000 });
-}
-
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
 
@@ -53,12 +30,6 @@ export async function GET(request: Request) {
 
   if (!SUPPORTED_INTERVALS.includes(interval)) {
     return NextResponse.json({ error: 'Invalid interval', supported: SUPPORTED_INTERVALS }, { status: 400 });
-  }
-
-  const cacheKey = `api:candles:${symbol}:${interval}:${limit}`;
-  const cached = cacheGet<unknown[]>(cacheKey);
-  if (cached) {
-    return NextResponse.json({ data: cached, cached: true });
   }
 
   try {
@@ -88,7 +59,6 @@ export async function GET(request: Request) {
       timestamp: Date.now(),
     }));
 
-    cacheSet(cacheKey, candles, 300);
     return NextResponse.json({ data: candles, interval, limit });
   } catch (err) {
     console.error('Binance candles API error:', err);

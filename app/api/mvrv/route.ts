@@ -18,29 +18,6 @@ interface MvrvResponse {
   history: Array<{ date: string; mvrv: number }>;
 }
 
-function getRouteCache(routeName: string) {
-  if (!globalThis.__routeCaches) {
-    globalThis.__routeCaches = new Map<string, Map<string, { data: unknown; expires: number }>>();
-  }
-  if (!globalThis.__routeCaches.has(routeName)) {
-    globalThis.__routeCaches.set(routeName, new Map());
-  }
-  return globalThis.__routeCaches.get(routeName)!;
-}
-
-const ROUTE_NAME = 'mvrv';
-const cache = getRouteCache(ROUTE_NAME);
-
-function cacheGet<T>(key: string): T | null {
-  const entry = cache.get(key);
-  if (!entry) return null;
-  if (Date.now() > entry.expires) { cache.delete(key); return null; }
-  return entry.data as T;
-}
-function cacheSet(key: string, data: unknown, ttlSeconds: number) {
-  cache.set(key, { data, expires: Date.now() + ttlSeconds * 1000 });
-}
-
 function calcZScore(values: number[]): number {
   if (values.length < 30) return 1.0;
   const mean = values.reduce((a, b) => a + b, 0) / values.length;
@@ -80,12 +57,6 @@ function getSignal(mvrv: number, zScore: number): { signal: MvrvResponse['signal
 }
 
 export async function GET() {
-  const cacheKey = 'api:mvrv';
-  const cached = cacheGet<MvrvResponse>(cacheKey);
-  if (cached) {
-    return NextResponse.json({ data: cached, _fromCache: true });
-  }
-
   try {
     const [priceRes, bcRes, histRes] = await Promise.all([
       fetch(`${CG_BASE}/simple/price?ids=bitcoin&vs_currency=usd&include_market_cap=true&include_24hr_change=true`, { signal: AbortSignal.timeout(5000) }),
@@ -163,7 +134,6 @@ export async function GET() {
       history: [],
     };
 
-    cacheSet(cacheKey, response, 3600);
     return NextResponse.json({ data: response });
   } catch (err) {
     console.error('MVRV error:', err);

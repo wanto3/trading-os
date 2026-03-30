@@ -16,29 +16,6 @@ export interface FundingRatesResponse {
   timestamp: number;
 }
 
-function getRouteCache(routeName: string) {
-  if (!globalThis.__routeCaches) {
-    globalThis.__routeCaches = new Map<string, Map<string, { data: unknown; expires: number }>>();
-  }
-  if (!globalThis.__routeCaches.has(routeName)) {
-    globalThis.__routeCaches.set(routeName, new Map());
-  }
-  return globalThis.__routeCaches.get(routeName)!;
-}
-
-const ROUTE_NAME = 'funding-rates';
-const cache = getRouteCache(ROUTE_NAME);
-
-function cacheGet<T>(key: string): T | null {
-  const entry = cache.get(key);
-  if (!entry) return null;
-  if (Date.now() > entry.expires) { cache.delete(key); return null; }
-  return entry.data as T;
-}
-function cacheSet(key: string, data: unknown, ttlSeconds: number) {
-  cache.set(key, { data, expires: Date.now() + ttlSeconds * 1000 });
-}
-
 function getStatus(ratePer8h: number): 'normal' | 'warning' | 'extreme' {
   const absRate = Math.abs(ratePer8h);
   if (absRate > 0.001) return 'extreme';    // > 0.1% per 8h
@@ -178,12 +155,6 @@ async function fetchDydx(): Promise<ExchangeFundingRate | null> {
 }
 
 export async function GET() {
-  const cacheKey = 'api:funding-rates';
-  const cached = cacheGet<FundingRatesResponse>(cacheKey);
-  if (cached) {
-    return NextResponse.json({ data: cached.data, averageApr: cached.averageApr, _fromCache: true, timestamp: cached.timestamp });
-  }
-
   try {
     const results = await Promise.allSettled([
       fetchBinance(),
@@ -211,7 +182,6 @@ export async function GET() {
       timestamp: Date.now(),
     };
 
-    cacheSet(cacheKey, response, 120); // 2 minute cache
     return NextResponse.json({ data: rates, averageApr, timestamp: response.timestamp });
   } catch (err) {
     console.error('Funding rates API error:', err);

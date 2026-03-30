@@ -2,29 +2,6 @@ import { NextResponse } from 'next/server';
 
 const CG_BASE = 'https://api.coingecko.com/api/v3';
 
-function getRouteCache(routeName: string) {
-  if (!globalThis.__routeCaches) {
-    globalThis.__routeCaches = new Map<string, Map<string, { data: unknown; expires: number }>>();
-  }
-  if (!globalThis.__routeCaches.has(routeName)) {
-    globalThis.__routeCaches.set(routeName, new Map());
-  }
-  return globalThis.__routeCaches.get(routeName)!;
-}
-
-const ROUTE_NAME = 'token-unlocks';
-const cache = getRouteCache(ROUTE_NAME);
-
-function cacheGet<T>(key: string): T | null {
-  const entry = cache.get(key);
-  if (!entry) return null;
-  if (Date.now() > entry.expires) { cache.delete(key); return null; }
-  return entry.data as T;
-}
-function cacheSet(key: string, data: unknown, ttlSeconds: number) {
-  cache.set(key, { data, expires: Date.now() + ttlSeconds * 1000 });
-}
-
 const UNLOCK_SCHEDULES = [
   { id: 'solana', symbol: 'SOL', name: 'Solana', nextUnlockDate: '2026-04-01', unlockAmountUsd: 142_000_000, unlockAmountTokens: 2_480_000, totalSupply: 580_000_000, vestingType: 'linear' as const, vcCostBasis: 0.022 },
   { id: 'jup', symbol: 'JUP', name: 'Jupiter', nextUnlockDate: '2026-04-05', unlockAmountUsd: 85_000_000, unlockAmountTokens: 95_000_000, totalSupply: 10_000_000_000, vestingType: 'cliff' as const, vcCostBasis: 0.05 },
@@ -60,12 +37,6 @@ function formatDate(dateStr: string): number {
 }
 
 export async function GET() {
-  const cacheKey = 'api:token-unlocks';
-  const cached = cacheGet<unknown>(cacheKey);
-  if (cached) {
-    return NextResponse.json({ data: cached, _fromCache: true });
-  }
-
   try {
     const tokenIds = UNLOCK_SCHEDULES.map(u => u.id).join(',');
     const cgUrl = `${CG_BASE}/coins/markets?vs_currency=usd&ids=${tokenIds}&order=market_cap_desc&per_page=20&price_change_percentage=24h&sparkline=false`;
@@ -164,7 +135,6 @@ export async function GET() {
     else if (highShock === 0 && mostCritical && mostCritical.shockIndex < 0.5) { signal = 'buy'; signalReason = 'No critical unlocks in near term — clean supply/demand backdrop'; }
 
     const response = { unlocks, mostCritical, totalShockTokens: highShock, signal, signalReason, timestamp: Date.now() };
-    cacheSet(cacheKey, response, 7200);
     return NextResponse.json({ data: response });
   } catch (err) {
     console.error('Token unlock API error:', err);
