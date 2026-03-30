@@ -79,7 +79,7 @@ export function OpportunityCard({ opportunity, index }: Props) {
           </span>
           <span className={`flex items-center gap-0.5 text-sm font-medium ${changeColor}`}>
             <ChangeIcon size={14} />
-            {Math.abs(opportunity.priceChange24h).toFixed(2)}%
+            {!isNaN(opportunity.priceChange24h) && opportunity.priceChange24h != null ? Math.abs(opportunity.priceChange24h).toFixed(2) : '0.00'}%
           </span>
         </div>
       </div>

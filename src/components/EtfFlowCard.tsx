@@ -120,7 +120,7 @@ export function EtfFlowCard() {
           <span className="text-xs text-gray-400">vs BTC Price</span>
           <span className="text-xs font-mono">
             <span className={flowColor(pricePositive)}>
-              {pricePositive ? '+' : ''}{btcPrice.toFixed(2)}%
+              {!isNaN(btcPrice) ? (pricePositive ? '+' : '') + btcPrice.toFixed(2) + '%' : '—'}
             </span>
             <span className="text-gray-600 ml-1">
               ({divergence === 'aligned' ? 'aligned' : divergence === 'positive' ? 'diverging +' : 'diverging -'})

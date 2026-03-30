@@ -9,6 +9,7 @@ function formatBtcPrice(price: number | null | undefined): string {
 }
 
 function formatCap(amount: number): string {
+  if (amount == null || isNaN(amount)) return '$—';
   if (amount >= 1e12) return '$' + (amount / 1e12).toFixed(2) + 'T';
   if (amount >= 1e9) return '$' + (amount / 1e9).toFixed(1) + 'B';
   if (amount >= 1e6) return '$' + (amount / 1e6).toFixed(0) + 'M';
@@ -36,6 +37,7 @@ function zoneBg(zone: string): string {
 }
 
 function zScoreBar(zScore: number): { width: string; color: string } {
+  if (zScore == null || isNaN(zScore)) return { width: '0%', color: 'bg-gray-500' };
   // Z-score typically ranges from -3 to +7
   // Map to 0-100%
   const pct = Math.min(100, Math.max(0, ((zScore + 3) / 10) * 100));
@@ -102,10 +104,10 @@ export function MvrvCard() {
           <span className="text-xs text-gray-400">MVRV Ratio</span>
           <div className="flex items-baseline gap-2">
             <span className={`text-xl font-mono font-bold ${zoneColor(data.zone)}`}>
-              {data.ratio.toFixed(2)}
+              {isNaN(data.ratio) ? '—' : data.ratio.toFixed(2)}
             </span>
             <span className="text-xs text-gray-500">
-              {trendPositive ? '+' : ''}{data.ratioChange7d.toFixed(2)} (7d)
+              {trendPositive ? '+' : ''}{isNaN(data.ratioChange7d) ? '—' : data.ratioChange7d.toFixed(2)} (7d)
             </span>
             <span className={trendPositive ? 'text-signal-buy' : 'text-signal-sell'}>
               {trendPositive ? '↑' : '↓'}
@@ -118,7 +120,7 @@ export function MvrvCard() {
           <div className="flex justify-between items-baseline mb-1">
             <span className="text-xs text-gray-400">Z-Score</span>
             <span className={`text-sm font-mono font-bold ${zoneColor(data.zone)}`}>
-              {data.zScore.toFixed(2)}
+              {isNaN(data.zScore) ? '—' : data.zScore.toFixed(2)}
             </span>
           </div>
           {/* Gauge bar */}

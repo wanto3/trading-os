@@ -8,6 +8,7 @@ function formatBtcPrice(price: number | null | undefined): string {
 }
 
 function formatMa(price: number): string {
+  if (price == null || isNaN(price)) return '$—';
   if (price >= 100000) return '$' + (price / 1000).toFixed(0) + 'K';
   return '$' + price.toFixed(0);
 }
