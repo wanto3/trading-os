@@ -21,8 +21,18 @@ function cacheSet(key: string, data: unknown, ttlSeconds: number) {
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
+
+  // Extract symbol from URL path — supports both:
+  // GET /api/candles/BTCUSDT?interval=1h (path-based)
+  // GET /api/candles?symbol=BTCUSDT&interval=1h (query-based)
+  let symbol = searchParams.get('symbol')?.toUpperCase().trim() || '';
+
+  // Try to extract symbol from URL path /api/candles/{symbol}
   const urlPath = request.url.split('/api/candles/')[1]?.split('?')[0];
-  const symbol = urlPath ? decodeURIComponent(urlPath).toUpperCase().trim() : searchParams.get('symbol')?.toUpperCase().trim() || '';
+  if (urlPath && urlPath.length > 0) {
+    symbol = decodeURIComponent(urlPath).toUpperCase().trim();
+  }
+
   const interval = searchParams.get('interval') || '1d';
   const limit = Math.min(Math.max(parseInt(searchParams.get('limit') || '100'), 1), 500);
 
@@ -34,7 +44,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Invalid interval', supported: SUPPORTED_INTERVALS }, { status: 400 });
   }
 
-  const cacheKey = `candles:${symbol}:${interval}:${limit}`;
+  const cacheKey = `candle:${symbol}:${interval}:${limit}`;
   const cached = cacheGet<unknown[]>(cacheKey);
   if (cached) {
     return NextResponse.json({ data: cached, cached: true });
