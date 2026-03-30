@@ -1,5 +1,4 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { cacheGet, cacheSet } from '../cache.js';
 
 interface CoinGeckoMarket {
   id: string;
@@ -28,13 +27,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const page = Math.min(Math.max(parseInt(req.query.page as string) || 1, 1), 5);
   const perPage = Math.min(Math.max(parseInt(req.query.per_page as string) || 50, 1), 50);
 
-  const CACHE_KEY = `coingecko:markets:${page}:${perPage}`;
-  const cached = cacheGet<CoinGeckoMarket[]>(CACHE_KEY);
-  if (cached) {
-    res.json({ data: cached, _fromCache: true });
-    return;
-  }
-
   try {
     const url = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=${perPage}&page=${page}&sparkline=true&price_change_percentage=7d`;
     const resp = await fetch(url, {
@@ -48,7 +40,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const data = (await resp.json()) as CoinGeckoMarket[];
-    cacheSet(CACHE_KEY, data, 60);
     res.json({ data });
   } catch (err) {
     console.error('Market coins API error:', err);

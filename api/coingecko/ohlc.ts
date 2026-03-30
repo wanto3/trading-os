@@ -1,5 +1,4 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { cacheGet, cacheSet } from '../cache.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -19,13 +18,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
 
-  const CACHE_KEY = `coingecko:ohlc:${coinId}:${days}`;
-  const cached = cacheGet<number[][]>(CACHE_KEY);
-  if (cached) {
-    res.json({ data: cached, _fromCache: true });
-    return;
-  }
-
   try {
     const url = `https://api.coingecko.com/api/v3/coins/${encodeURIComponent(coinId)}/ohlc?vs_currency=usd&days=${days}`;
     const resp = await fetch(url, {
@@ -39,7 +31,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const data = (await resp.json()) as number[][];
-    cacheSet(CACHE_KEY, data, 300);
     res.json({ data });
   } catch (err) {
     console.error('CoinGecko OHLC API error:', err);
