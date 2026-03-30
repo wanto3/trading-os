@@ -2,6 +2,10 @@
 
 High-conviction opportunities dashboard — aggregates crypto analysis, prediction markets, social signals, and on-chain data into simple decision indicators.
 
+## Deployment
+
+Production: https://trading-os-i.vercel.app
+
 ## Tech Stack
 
 - **Frontend:** React 18, TypeScript, Vite, TailwindCSS
